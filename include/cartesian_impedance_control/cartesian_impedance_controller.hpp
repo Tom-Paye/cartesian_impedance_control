@@ -46,6 +46,7 @@
 #include "franka_msgs/msg/franka_robot_state.hpp"
 #include "franka_msgs/msg/errors.hpp"
 #include "messages_fr3/srv/set_pose.hpp"
+#include "std_msgs/msg/MultiArrayLayout.hpp"
 
 #include "franka_semantic_components/franka_robot_model.hpp"
 #include "franka_semantic_components/franka_robot_state.hpp"
@@ -86,6 +87,7 @@ public:
     //Nodes
     rclcpp::Subscription<franka_msgs::msg::FrankaRobotState>::SharedPtr franka_state_subscriber = nullptr;
     rclcpp::Service<messages_fr3::srv::SetPose>::SharedPtr pose_srv_;
+    rclcpp::Subscription<fstd_msg>::SharedPtr franka_state_subscriber = nullptr;
 
 
     //Functions
@@ -94,7 +96,8 @@ public:
     void update_stiffness_and_references();
     void arrayToMatrix(const std::array<double, 6>& inputArray, Eigen::Matrix<double, 6, 1>& resultMatrix);
     void arrayToMatrix(const std::array<double, 7>& inputArray, Eigen::Matrix<double, 7, 1>& resultMatrix);
-    Eigen::Matrix<double, 7, 1> saturateTorqueRate(const Eigen::Matrix<double, 7, 1>& tau_d_calculated, const Eigen::Matrix<double, 7, 1>& tau_J_d);  
+    Eigen::Matrix<double, 7, 1> saturateTorqueRate(const Eigen::Matrix<double, 7, 1>& tau_d_calculated, const Eigen::Matrix<double, 7, 1>& tau_J_d);
+    Eigen::Matrix<double, 7, 1> calcRepulsiveTorque(Eigen::Matrix<double, 6, 7>& repulsive_forces);   
     std::array<double, 6> convertToStdArray(const geometry_msgs::msg::WrenchStamped& wrench);
     //State vectors and matrices
     std::array<double, 7> q_subscribed;
@@ -193,6 +196,13 @@ public:
 
     //Flags
     bool config_control = false;           // sets if we want to control the configuration of the robot in nullspace
+    bool do_logging = false;               // set if we do log values
+
+    //Filter-parameters
+    double filter_params_{0.001};
+    int mode_ = 2;
+};
+}  // namespace cartesian_impedance_control
     bool do_logging = false;               // set if we do log values
 
     //Filter-parameters
