@@ -150,6 +150,24 @@ CallbackReturn CartesianImpedanceController::on_configure(const rclcpp_lifecycle
 
 
   RCLCPP_DEBUG(get_node()->get_logger(), "configured successfully");
+
+  try {
+    rclcpp::QoS qos_profile(1); // Depth of the message queue
+    qos_profile.reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE);
+    franka_state_subscriber = get_node()->create_subscription<franka_msgs::msg::FrankaRobotState>(
+    "franka_robot_state_broadcaster/robot_state", qos_profile, 
+    std::bind(&CartesianImpedanceController::topic_callback, this, std::placeholders::_1));
+    std::cout << "Succesfully subscribed to robot_state_broadcaster" << std::endl;
+  }
+
+  catch (const std::exception& e) {
+    fprintf(stderr,  "Exception thrown during publisher creation at configure stage with message : %s \n",e.what());
+    return CallbackReturn::ERROR;
+    }
+
+
+  RCLCPP_DEBUG(get_node()->get_logger(), "configured successfully");
+  
   return CallbackReturn::SUCCESS;
 }
 
@@ -198,6 +216,19 @@ void CartesianImpedanceController::updateJointStates() {
     q_(i) = position_interface.get_value();
     dq_(i) = velocity_interface.get_value();
   }
+}
+
+ 
+Eigen::Matrix<double, 7, 1> CartesianImpedanceController::calcRepulsiveTorque(Eigen::Matrix<double, 6, 7>& repulsive_forces) {
+  // PLAN: for each force in the vector, apply the jacobian of the joint to get the torque inputs
+  Eigen::VectorXd tau_repulsion(7), tau_repulsion_i(7);
+  for (int i=0; i<num_joints; ++i) {
+    std::array<double, 42> jacobian_array_i =  franka_robot_model_->getZeroJacobian(franka::Frame(i));
+    Eigen::Map<Eigen::Matrix<double, 6, 7>> jacobian_i(jacobian_array_i.data());
+    tau_repulsion_i = jacobian_i.transpose() * Sm * (repulsive_forces.col(i));
+    tau_repulsion = tau_repulsion + tau_repulsion_i;
+  }
+  return(tau_repulsion);
 }
 
 controller_interface::return_type CartesianImpedanceController::update(const rclcpp::Time& /*time*/, const rclcpp::Duration& /*period*/) {  
