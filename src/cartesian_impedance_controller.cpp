@@ -210,8 +210,11 @@ void CartesianImpedanceController::topic_callback(const std::shared_ptr<franka_m
 void CartesianImpedanceController::repulsion_topic_callback(const std::shared_ptr<messages_fr3::msg::Array2d> msg) {
   int width = msg->width;
   int height = msg->height;
-  float array[] = msg->array;
-  if (width != 7 || height != 6 || sizeof(array)!=42) {
+  float array[42];
+  for (int idx=0; idx<42; idx++) {
+    array[idx] = msg->array[idx];
+  }
+  if (width != 7 || height != 6) {
     std::cout << "Error: repulsion_forces message has the wrong dimensions" << std::endl;
     float array[6][7] = {0};
   }
