@@ -210,15 +210,15 @@ void CartesianImpedanceController::topic_callback(const std::shared_ptr<franka_m
 void CartesianImpedanceController::repulsion_topic_callback(const std::shared_ptr<messages_fr3::msg::Array2d> msg) {
   int width = msg->width;
   int height = msg->height;
-  float array[42];
-  for (int idx=0; idx<42; idx++) {
-    array[idx] = msg->array[idx];
-  }
+  std::vector<double> array = msg->array;
+  // for (int idx=0; idx<42; idx++) {
+  //   array[idx] = msg->array[idx];
+  // }
   if (width != 7 || height != 6) {
     std::cout << "Error: repulsion_forces message has the wrong dimensions" << std::endl;
-    float array[6][7] = {0};
+    std::vector<double> array = {0};
   }
-  Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>> repulsive_forces(array.data(), height, width);
+  Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> repulsive_forces(array.data(), height, width);
 }
 
 void CartesianImpedanceController::updateJointStates() {
