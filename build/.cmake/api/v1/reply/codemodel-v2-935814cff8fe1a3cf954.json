@@ -1,0 +1,88 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Debug-7c1794099ce1616a5ebb.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.5"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "cartesian_impedance_control",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "cartesian_impedance_control::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-cartesian_impedance_control-Debug-95910e27e6246179ffe7.json",
+					"name" : "cartesian_impedance_control",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "cartesian_impedance_control_uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-cartesian_impedance_control_uninstall-Debug-b44e8dd37355c01960bf.json",
+					"name" : "cartesian_impedance_control_uninstall",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-uninstall-Debug-faa7ee8854bebb601ec6.json",
+					"name" : "uninstall",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "user_input_client::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-user_input_client-Debug-ecc51dcb8cc3f72487ef.json",
+					"name" : "user_input_client",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/tom/franka_ros2_ws/src/cartesian_impedance_control/build",
+		"source" : "/home/tom/franka_ros2_ws/src/cartesian_impedance_control"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}

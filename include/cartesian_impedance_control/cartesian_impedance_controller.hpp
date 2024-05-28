@@ -87,11 +87,12 @@ public:
     //Nodes
     rclcpp::Subscription<franka_msgs::msg::FrankaRobotState>::SharedPtr franka_state_subscriber = nullptr;
     rclcpp::Service<messages_fr3::srv::SetPose>::SharedPtr pose_srv_;
-    rclcpp::Subscription<fstd_msg>::SharedPtr franka_state_subscriber = nullptr;
+    rclcpp::Subscription<messages_fr3::msg::Array2d>::SharedPtr repulsion_subscriber = nullptr;
 
 
     //Functions
     void topic_callback(const std::shared_ptr<franka_msgs::msg::FrankaRobotState> msg);
+    void repulsion_topic_callback(const std::shared_ptr<messages_fr3::msg::Array2d> msg);
     void updateJointStates();
     void update_stiffness_and_references();
     void arrayToMatrix(const std::array<double, 6>& inputArray, Eigen::Matrix<double, 6, 1>& resultMatrix);

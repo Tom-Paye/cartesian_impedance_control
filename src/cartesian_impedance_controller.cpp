@@ -152,12 +152,12 @@ CallbackReturn CartesianImpedanceController::on_configure(const rclcpp_lifecycle
   RCLCPP_DEBUG(get_node()->get_logger(), "configured successfully");
 
   try {
-    rclcpp::QoS qos_profile(1); // Depth of the message queue
+    rclcpp::QoS qos_profile(10); // Depth of the message queue
     qos_profile.reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE);
-    franka_state_subscriber = get_node()->create_subscription<franka_msgs::msg::FrankaRobotState>(
-    "franka_robot_state_broadcaster/robot_state", qos_profile, 
+    repulsion_subscriber = get_node()->create_subscription<messages_fr3::msg::Array2d>(
+    "repulsion_forces", qos_profile, 
     std::bind(&CartesianImpedanceController::topic_callback, this, std::placeholders::_1));
-    std::cout << "Succesfully subscribed to robot_state_broadcaster" << std::endl;
+    std::cout << "Succesfully subscribed to repulsion_force_broadcaster" << std::endl;
   }
 
   catch (const std::exception& e) {
@@ -205,6 +205,17 @@ std::array<double, 6> CartesianImpedanceController::convertToStdArray(const geom
 void CartesianImpedanceController::topic_callback(const std::shared_ptr<franka_msgs::msg::FrankaRobotState> msg) {
   O_F_ext_hat_K = convertToStdArray(msg->o_f_ext_hat_k);
   arrayToMatrix(O_F_ext_hat_K, O_F_ext_hat_K_M);
+}
+
+void CartesianImpedanceController::repulsion_topic_callback(const std::shared_ptr<messages_fr3::msg::Array2d> msg) {
+  int width = msg->width;
+  int height = msg->height;
+  float array[] = msg->array;
+  if (width != 7 || height != 6 || sizeof(array)!=42) {
+    std::cout << "Error: repulsion_forces message has the wrong dimensions" << std::endl;
+    float array[6][7] = {0};
+  }
+  Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>> repulsive_forces(array.data(), height, width);
 }
 
 void CartesianImpedanceController::updateJointStates() {

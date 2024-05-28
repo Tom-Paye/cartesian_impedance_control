@@ -1,0 +1,54 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/tom/franka_ros2_ws/src/install/messages_fr3/include/**",
+        "/home/tom/franka_ros2_ws/src/install/joint_trajectory_controller/include/**",
+        "/home/tom/franka_ros2_ws/src/install/franka_robot_state_broadcaster/include/**",
+        "/home/tom/franka_ros2_ws/src/install/franka_example_controllers/include/**",
+        "/home/tom/franka_ros2_ws/src/install/franka_semantic_components/include/**",
+        "/home/tom/franka_ros2_ws/src/install/franka_hardware/include/**",
+        "/home/tom/franka_ros2_ws/src/install/franka_msgs/include/**",
+        "/home/tom/franka_ros2_ws/install/joint_trajectory_controller/include/**",
+        "/home/tom/franka_ros2_ws/install/franka_robot_state_broadcaster/include/**",
+        "/home/tom/franka_ros2_ws/install/franka_example_controllers/include/**",
+        "/home/tom/franka_ros2_ws/install/franka_semantic_components/include/**",
+        "/home/tom/franka_ros2_ws/install/franka_hardware/include/**",
+        "/home/tom/franka_ros2_ws/install/franka_msgs/include/**",
+        "/home/tom/ros2_ws/install/zed_topic_benchmark_component/include/**",
+        "/home/tom/ros2_ws/install/zed_topic_benchmark_interfaces/include/**",
+        "/home/tom/ros2_ws/install/zed_rgb_convert/include/**",
+        "/home/tom/ros2_ws/install/zed_aruco_localization/include/**",
+        "/home/tom/ros2_ws/install/zed_components/include/**",
+        "/home/tom/ros2_ws/install/rviz_plugin_zed_od/include/**",
+        "/home/tom/ros2_ws/install/zed_interfaces/include/**",
+        "/home/tom/ros2_ws/install/joint_trajectory_controller/include/**",
+        "/home/tom/ros2_ws/install/franka_example_controllers/include/**",
+        "/home/tom/ros2_ws/install/franka_semantic_components/include/**",
+        "/home/tom/ros2_ws/install/franka_hardware/include/**",
+        "/home/tom/ros2_ws/install/franka_msgs/include/**",
+        "/home/tom/ros2_ws/install/examples_rclcpp_cbg_executor/include/**",
+        "/opt/ros/humble/include/**",
+        "/home/tom/franka_ros2_ws/src/Vision-based-robot-evasion/include/**",
+        "/home/tom/franka_ros2_ws/src/cartesian_impedance_control/include/**",
+        "/home/tom/franka_ros2_ws/src/src/franka_ros2/franka_example_controllers/include/**",
+        "/home/tom/franka_ros2_ws/src/src/franka_ros2/franka_gripper/include/**",
+        "/home/tom/franka_ros2_ws/src/src/franka_ros2/franka_hardware/include/**",
+        "/home/tom/franka_ros2_ws/src/src/franka_ros2/franka_robot_state_broadcaster/include/**",
+        "/home/tom/franka_ros2_ws/src/src/franka_ros2/franka_semantic_components/include/**",
+        "/home/tom/franka_ros2_ws/src/src/franka_ros2/joint_trajectory_controller/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}
