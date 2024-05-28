@@ -204,10 +204,3 @@ public:
     int mode_ = 2;
 };
 }  // namespace cartesian_impedance_control
-    bool do_logging = false;               // set if we do log values
-
-    //Filter-parameters
-    double filter_params_{0.001};
-    int mode_ = 2;
-};
-}  // namespace cartesian_impedance_control
