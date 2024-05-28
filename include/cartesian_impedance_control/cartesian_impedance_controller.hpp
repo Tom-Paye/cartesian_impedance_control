@@ -46,7 +46,7 @@
 #include "franka_msgs/msg/franka_robot_state.hpp"
 #include "franka_msgs/msg/errors.hpp"
 #include "messages_fr3/srv/set_pose.hpp"
-#include "std_msgs/msg/MultiArrayLayout.hpp"
+#include "messages_fr3/msg/Array2d.hpp"
 
 #include "franka_semantic_components/franka_robot_model.hpp"
 #include "franka_semantic_components/franka_robot_state.hpp"
