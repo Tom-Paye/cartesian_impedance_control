@@ -156,7 +156,7 @@ CallbackReturn CartesianImpedanceController::on_configure(const rclcpp_lifecycle
     qos_profile.reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE);
     repulsion_subscriber = get_node()->create_subscription<messages_fr3::msg::Array2d>(
     "repulsion_forces", qos_profile, 
-    std::bind(&CartesianImpedanceController::topic_callback, this, std::placeholders::_1));
+    std::bind(&CartesianImpedanceController::repulsion_topic_callback, this, std::placeholders::_1));
     std::cout << "Succesfully subscribed to repulsion_force_broadcaster" << std::endl;
   }
 
