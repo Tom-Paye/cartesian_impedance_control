@@ -42,6 +42,11 @@ Launch the controller: <br />
 ros2 launch cartesian_impedance_control cartesian_impedance_controller.launch.py
 ```
 
+To launch the controller with fake hardware: <br />
+```bash
+ros2 launch cartesian_impedance_control cartesian_impedance_controller.launch.py robot_ip:=dont-care use_fake_hardware:=true
+```
+
 Launch the client if you want to adjust parameters: <br />
 ``` bash
 ros2 run cartesian_impedance_control user_input_client 
