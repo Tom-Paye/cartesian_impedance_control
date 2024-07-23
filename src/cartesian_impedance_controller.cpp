@@ -216,9 +216,11 @@ void CartesianImpedanceController::repulsion_topic_callback(const std::shared_pt
   // }
   if (width != 7 || height != 6) {
     std::cout << "Error: repulsion_forces message has the wrong dimensions" << std::endl;
+    std::cout << "Dimensions are:"<< height << " by " << width << std::endl;
     std::vector<double> array = {0};
   }
-  Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> repulsive_forces(array.data(), height, width);
+  Eigen::Map<Eigen::Matrix<double, 6, 7>> repulsive_forces(array.data(), height, width);
+
 }
 
 void CartesianImpedanceController::updateJointStates() {
@@ -233,7 +235,7 @@ void CartesianImpedanceController::updateJointStates() {
 }
 
  
-Eigen::Matrix<double, 7, 1> CartesianImpedanceController::calcRepulsiveTorque(Eigen::Matrix<double, 6, 7>& repulsive_forces) {
+Eigen::Matrix<double, 7, 1> CartesianImpedanceController::calcRepulsiveTorque(Eigen::Matrix<double, 6, 7> repulsive_forces) {
   // PLAN: for each force in the vector, apply the jacobian of the joint to get the torque inputs
   Eigen::VectorXd tau_repulsion(7), tau_repulsion_i(7);
   for (int i=0; i<num_joints; ++i) {
@@ -309,9 +311,10 @@ controller_interface::return_type CartesianImpedanceController::update(const rcl
   I_F_error += dt * Sf* (F_contact_des - F_ext);
   F_cmd = Sf*(0.4 * (F_contact_des - F_ext) + 0.9 * I_F_error + 0.9 * F_contact_des);
 
-  Eigen::VectorXd tau_task(7), tau_nullspace(7), tau_d(7), tau_impedance(7);
+  Eigen::VectorXd tau_task(7), tau_nullspace(7), tau_d(7), tau_impedance(7), tau_repulsion(7);
   pseudoInverse(jacobian.transpose(), jacobian_transpose_pinv);
 
+  tau_repulsion = calcRepulsiveTorque(repulsive_forces);
   tau_nullspace << (Eigen::MatrixXd::Identity(7, 7) -
                     jacobian.transpose() * jacobian_transpose_pinv) *
                     (nullspace_stiffness_ * config_control * (q_d_nullspace_ - q_) - //if config_control = true we control the whole robot configuration

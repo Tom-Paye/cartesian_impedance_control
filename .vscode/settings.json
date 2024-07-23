@@ -2,7 +2,10 @@
     "files.associations": {
         "cassert": "cpp",
         "functional": "cpp",
-        "core": "cpp"
+        "core": "cpp",
+        "array": "cpp",
+        "string": "cpp",
+        "string_view": "cpp"
     },
     "python.autoComplete.extraPaths": [
         "/home/tom/franka_ros2_ws/src/install/my_cpp_py_pkg/local/lib/python3.10/dist-packages",
@@ -81,5 +84,6 @@
         "/opt/ros/humble/lib/python3.10/site-packages",
         "/opt/ros/humble/local/lib/python3.10/dist-packages",
         "/home/tom/ros2_ws"
-    ]
+    ],
+    "ros.distro": "humble"
 }

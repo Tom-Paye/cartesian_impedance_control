@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Site BuildName="(empty)"
+	BuildStamp="20240613-1343-Experimental"
+	Name="tom-Vivobook-ASUSLaptop-M7400QE-M7400QE"
+	Generator="ctest-3.22.1"
+	CompilerName="/usr/bin/c++"
+	CompilerVersion="11.4.0"
+	OSName="Linux"
+	Hostname="tom-Vivobook-ASUSLaptop-M7400QE-M7400QE"
+	OSRelease="5.15.0-1064-realtime"
+	OSVersion="#72-Ubuntu SMP PREEMPT_RT Wed May 15 15:52:13 UTC 2024"
+	OSPlatform="x86_64"
+	Is64Bits="1"
+	VendorString="AuthenticAMD"
+	VendorID="Advanced Micro Devices"
+	FamilyID="25"
+	ModelID="80"
+	ProcessorCacheSize="512"
+	NumberOfLogicalCPU="16"
+	NumberOfPhysicalCPU="8"
+	TotalVirtualMemory="2047"
+	TotalPhysicalMemory="31487"
+	LogicalProcessorsPerPhysical="2"
+	ProcessorClockFrequency="4250.88"
+	>
+	<Testing>
+		<StartDateTime>Jun 13 15:53 CEST</StartDateTime>
+		<StartTestTime>1718286827</StartTestTime>
+		<TestList/>
+		<EndDateTime>Jun 13 15:53 CEST</EndDateTime>
+		<EndTestTime>1718286827</EndTestTime>
+		<ElapsedMinutes>0</ElapsedMinutes>
+	</Testing>
+</Site>

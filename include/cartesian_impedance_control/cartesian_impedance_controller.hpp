@@ -98,7 +98,7 @@ public:
     void arrayToMatrix(const std::array<double, 6>& inputArray, Eigen::Matrix<double, 6, 1>& resultMatrix);
     void arrayToMatrix(const std::array<double, 7>& inputArray, Eigen::Matrix<double, 7, 1>& resultMatrix);
     Eigen::Matrix<double, 7, 1> saturateTorqueRate(const Eigen::Matrix<double, 7, 1>& tau_d_calculated, const Eigen::Matrix<double, 7, 1>& tau_J_d);
-    Eigen::Matrix<double, 7, 1> calcRepulsiveTorque(Eigen::Matrix<double, 6, 7>& repulsive_forces);   
+    Eigen::Matrix<double, 7, 1> calcRepulsiveTorque(Eigen::Matrix<double, 6, 7> repulsive_forces);   
     std::array<double, 6> convertToStdArray(const geometry_msgs::msg::WrenchStamped& wrench);
     //State vectors and matrices
     std::array<double, 7> q_subscribed;
@@ -107,6 +107,7 @@ public:
     Eigen::Matrix<double, 7, 1> q_subscribed_M;
     Eigen::Matrix<double, 7, 1> tau_J_d_M = Eigen::MatrixXd::Zero(7, 1);
     Eigen::Matrix<double, 6, 1> O_F_ext_hat_K_M = Eigen::MatrixXd::Zero(6,1);
+    Eigen::Matrix<double, 6, 7> repulsive_forces = Eigen::MatrixXd::Zero(6,1);
     Eigen::Matrix<double, 7, 1> q_;
     Eigen::Matrix<double, 7, 1> dq_;
     Eigen::MatrixXd jacobian_transpose_pinv;  
@@ -178,6 +179,7 @@ public:
     Eigen::Matrix<double, 6, 1> error;                                                       // pose error (6d)
     double nullspace_stiffness_{0.001};
     double nullspace_stiffness_target_{0.001};
+    
 
     //Logging
     int outcounter = 0;

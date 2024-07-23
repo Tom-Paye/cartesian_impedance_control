@@ -72,7 +72,7 @@ def generate_launch_description():
         Node(
             package='controller_manager',
             executable='spawner',
-            arguments=['cartesian_impedance_controller'],
+            arguments=['cartesian_impedance_controller', "-c", "/controller_manager"],
             output='screen',
         ),
     ])
