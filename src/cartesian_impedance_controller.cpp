@@ -66,7 +66,7 @@ Eigen::Matrix<double, 7, 1> CartesianImpedanceController::saturateTorqueRate(
   const Eigen::Matrix<double, 7, 1>& tau_d_calculated,
   const Eigen::Matrix<double, 7, 1>& tau_J_d_M) {  
   Eigen::Matrix<double, 7, 1> tau_d_saturated{};
-  for (size_t i = 0; i < 7; i++) {
+  for (u_int i = 0; i < 7; i++) {
   double difference = tau_d_calculated[i] - tau_J_d_M[i];
   tau_d_saturated[i] =
          tau_J_d_M[i] + std::max(std::min(difference, delta_tau_max_), -delta_tau_max_);
@@ -219,7 +219,10 @@ void CartesianImpedanceController::repulsion_topic_callback(const std::shared_pt
     std::cout << "Dimensions are:"<< height << " by " << width << std::endl;
     std::vector<double> array = {0};
   }
-  Eigen::Map<Eigen::Matrix<double, 6, 7>> repulsive_forces(array.data(), height, width);
+  Eigen::Map<Eigen::Matrix<double, 6, 7>> forces(array.data(), height, width);
+  repulsive_forces = forces;
+  // std::cout << "repulsive_forces received [N]" << std::endl;
+  // std::cout << repulsive_forces << std::endl;
 
 }
 
@@ -237,13 +240,21 @@ void CartesianImpedanceController::updateJointStates() {
  
 Eigen::Matrix<double, 7, 1> CartesianImpedanceController::calcRepulsiveTorque(Eigen::Matrix<double, 6, 7> repulsive_forces) {
   // PLAN: for each force in the vector, apply the jacobian of the joint to get the torque inputs
+  // std::cout << "repulsive_forces [N]" << std::endl;
+  // std::cout << repulsive_forces << std::endl;
+  
   Eigen::VectorXd tau_repulsion(7), tau_repulsion_i(7);
+  tau_repulsion = tau_repulsion * 0; 
   for (int i=0; i<num_joints; ++i) {
     std::array<double, 42> jacobian_array_i =  franka_robot_model_->getZeroJacobian(franka::Frame(i));
     Eigen::Map<Eigen::Matrix<double, 6, 7>> jacobian_i(jacobian_array_i.data());
     tau_repulsion_i = jacobian_i.transpose() * Sm * (repulsive_forces.col(i));
+    // std::cout << "tau_repulsion_i [Nm]" << std::endl;
+    // std::cout << tau_repulsion_i << std::endl;
     tau_repulsion = tau_repulsion + tau_repulsion_i;
   }
+  // std::cout << "tau_repulsion [Nm]" << std::endl;
+  // std::cout << tau_repulsion << std::endl;
   return(tau_repulsion);
 }
 
@@ -321,7 +332,7 @@ controller_interface::return_type CartesianImpedanceController::update(const rcl
                     (2.0 * sqrt(nullspace_stiffness_)) * dq_);  // if config control ) false we don't care about the joint position
 
   tau_impedance = jacobian.transpose() * Sm * (F_impedance /*+ F_repulsion + F_potential*/) + jacobian.transpose() * Sf * F_cmd;
-  auto tau_d_placeholder = tau_impedance + tau_nullspace + coriolis; //add nullspace and coriolis components to desired torque
+  auto tau_d_placeholder = tau_repulsion + tau_impedance + tau_nullspace + coriolis; //add nullspace and coriolis components to desired torque
   tau_d << tau_d_placeholder;
   tau_d << saturateTorqueRate(tau_d, tau_J_d_M);  // Saturate torque rate to avoid discontinuities
   tau_J_d_M = tau_d;
@@ -339,11 +350,17 @@ controller_interface::return_type CartesianImpedanceController::update(const rcl
     std::cout << "tau_d" << std::endl;
     std::cout << tau_d << std::endl;
     std::cout << "--------" << std::endl;
+    std::cout << "tau_nullspace" << std::endl;
     std::cout << tau_nullspace << std::endl;
     std::cout << "--------" << std::endl;
+    std::cout << "tau_impedance" << std::endl;
     std::cout << tau_impedance << std::endl;
     std::cout << "--------" << std::endl;
+    std::cout << "coriolis" << std::endl;
     std::cout << coriolis << std::endl;
+    std::cout << "--------" << std::endl;
+    std::cout << "tau_repulsion" << std::endl;
+    std::cout << tau_repulsion << std::endl;
     std::cout << "Inertia scaling [m]: " << std::endl;
     std::cout << T << std::endl;
   }

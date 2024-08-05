@@ -107,7 +107,6 @@ public:
     Eigen::Matrix<double, 7, 1> q_subscribed_M;
     Eigen::Matrix<double, 7, 1> tau_J_d_M = Eigen::MatrixXd::Zero(7, 1);
     Eigen::Matrix<double, 6, 1> O_F_ext_hat_K_M = Eigen::MatrixXd::Zero(6,1);
-    Eigen::Matrix<double, 6, 7> repulsive_forces = Eigen::MatrixXd::Zero(6,1);
     Eigen::Matrix<double, 7, 1> q_;
     Eigen::Matrix<double, 7, 1> dq_;
     Eigen::MatrixXd jacobian_transpose_pinv;  
@@ -175,6 +174,7 @@ public:
     Eigen::Matrix<double, 6, 1> F_contact_target = Eigen::MatrixXd::Zero(6, 1);              // desired contact force used for filtering
     Eigen::Matrix<double, 6, 1> F_ext = Eigen::MatrixXd::Zero(6, 1);                         // external forces
     Eigen::Matrix<double, 6, 1> F_cmd = Eigen::MatrixXd::Zero(6, 1);                         // commanded contact force
+    Eigen::Matrix<double, 6, 7> repulsive_forces; // = Eigen::MatrixXd::Zero(6,7);               // we assume this comes in as forces in N and Nm
     Eigen::Matrix<double, 7, 1> q_d_nullspace_;
     Eigen::Matrix<double, 6, 1> error;                                                       // pose error (6d)
     double nullspace_stiffness_{0.001};
@@ -203,6 +203,6 @@ public:
 
     //Filter-parameters
     double filter_params_{0.001};
-    int mode_ = 2;
+    int mode_ = 1;
 };
 }  // namespace cartesian_impedance_control
