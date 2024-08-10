@@ -152,10 +152,10 @@ CallbackReturn CartesianImpedanceController::on_configure(const rclcpp_lifecycle
   RCLCPP_DEBUG(get_node()->get_logger(), "configured successfully");
 
   try {
-    rclcpp::QoS qos_profile(10); // Depth of the message queue
-    qos_profile.reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE);
+    // rclcpp::QoS qos_profile(10); // Depth of the message queue
+    // qos_profile.reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE);
     repulsion_subscriber = get_node()->create_subscription<messages_fr3::msg::Array2d>(
-    "repulsion_forces", qos_profile, 
+    "repulsion_forces", 10, 
     std::bind(&CartesianImpedanceController::repulsion_topic_callback, this, std::placeholders::_1));
     std::cout << "Succesfully subscribed to repulsion_force_broadcaster" << std::endl;
   }
@@ -217,12 +217,53 @@ void CartesianImpedanceController::repulsion_topic_callback(const std::shared_pt
   if (width != 7 || height != 6) {
     std::cout << "Error: repulsion_forces message has the wrong dimensions" << std::endl;
     std::cout << "Dimensions are:"<< height << " by " << width << std::endl;
-    std::vector<double> array = {0};
+    std::vector<double> array[6][7] = {};
   }
+
+  std::cout << "Dimensions are:"<< height << " by " << width << std::endl;
+  // Eigen::ArrayXXd rel_forces(6, 7);
+  Eigen::Map<Eigen::Array<double, 6, 7>> rel_forces(array.data(), height, width);
+  normalized_rep_to_rep_forces(rel_forces);
+
   Eigen::Map<Eigen::Matrix<double, 6, 7>> forces(array.data(), height, width);
+  // Eigen::Matrix<double, 6, 7> forces = rel_forces.matrix();
+  
   repulsive_forces = forces;
   // std::cout << "repulsive_forces received [N]" << std::endl;
   // std::cout << repulsive_forces << std::endl;
+
+  rclcpp::Time repulsion_date = get_node()->get_clock()->now();
+
+}
+
+void CartesianImpedanceController::normalized_rep_to_rep_forces(Eigen::Array<double, 6, 7> relative_forces) {
+
+  /*
+  Takes a list of pseudo-forces applied to every joint on the robot and 
+  rescales it to have forces in Newtons and moments in Nm
+
+  Pseudo-forces are the result of processing minimum link distances into an interaction,
+  then resizing this interaction so it is only expressed onto the actionnable joints
+  */
+
+  ///////////////Rescaling///////////
+  // Expect the first column to correspond to base link (attached to the ground, no DOF)
+  // Expect any link after link 7 to be hands / fingers
+  
+  Eigen::ArrayXd max_moments;
+  max_moments<<87., 87., 87., 87., 12., 12., 12.;
+
+  for (int i=0;i<6;i++){
+    moments_array.row(i) += max_moments;
+    //this relates all spring forces and moments by a factor of 1m
+    // as in Nm / m = N, but a spring constant is in N/m, so we just say the force is just this
+    // spring moment constant applied 1m away 
+  }
+  
+  relative_forces = relative_forces * moments_array * 2;
+
+
+
 
 }
 
@@ -242,20 +283,82 @@ Eigen::Matrix<double, 7, 1> CartesianImpedanceController::calcRepulsiveTorque(Ei
   // PLAN: for each force in the vector, apply the jacobian of the joint to get the torque inputs
   // std::cout << "repulsive_forces [N]" << std::endl;
   // std::cout << repulsive_forces << std::endl;
+
+  // For critical damping to work correctly, we need incoming information to have a dimension of 
+  // meters, or have damping and spring coefficients tailored to the incoming data 
+  // Input : clip(max_dist-min_dist - abs(x-min_dist))     * application_dist if torque
+  // we first need to rescale the spring and damping coeffs by 1/next_link_dist to get the correct
+  // units (N/m and N respectively)
   
-  Eigen::VectorXd tau_repulsion(7), tau_repulsion_i(7);
+  if ((get_node()->get_clock()->now().seconds() - repulsion_date.seconds()) > 0.005) {
+    return Eigen::MatrixXd::Zero(6, 7);
+  }
+
+  Eigen::VectorXd tau_repulsion(7), tau_repulsion_i(7), tau_damping(7), tau_damping_i(7);
   tau_repulsion = tau_repulsion * 0; 
+  tau_damping = tau_damping * 0;
   for (int i=0; i<num_joints; ++i) {
+
+    double spring_constant = spring_constants(i);
     std::array<double, 42> jacobian_array_i =  franka_robot_model_->getZeroJacobian(franka::Frame(i));
     Eigen::Map<Eigen::Matrix<double, 6, 7>> jacobian_i(jacobian_array_i.data());
-    tau_repulsion_i = jacobian_i.transpose() * Sm * (repulsive_forces.col(i));
+    tau_repulsion_i = jacobian_i.transpose() * Sm * (repulsive_forces.col(i)*spring_constant);
     // std::cout << "tau_repulsion_i [Nm]" << std::endl;
     // std::cout << tau_repulsion_i << std::endl;
     tau_repulsion = tau_repulsion + tau_repulsion_i;
+
+
+    // Add a component for damping
+    Eigen::vector<double, 6> placeholder = {1., 1., 1., 1., 1., 1}
+    damping_constant = jacobian_i.transpose() * Sm * (placeholder*2*sqrt(spring_constant));
+    tau_damping_i = damping_constant * -dq_.array();
+    tau_damping = tau_damping + tau_damping_i;
+
+
+
+  
   }
-  // std::cout << "tau_repulsion [Nm]" << std::endl;
+  // std::cout << "tau_repulsion raw [Nm]" << std::endl;
   // std::cout << tau_repulsion << std::endl;
+  tau_repulsion = tau_repulsion + tau_damping;
+
   return(tau_repulsion);
+
+
+
+  // This part if we want to add a nullspace damper relative only to the repulsion, with lower
+  // priority than the repulsion. This might not make sense, as it will damp even commanded
+  // position even in the absence of repulsion (unless we only apply this when there is repulsion)
+  // plus, by defauld the inverse diff kinematics try to minimize speed during actuation, so
+  // this might actually do nothing
+  // This needs to be modified so the positions of every joint is calculated with its own jacobian,
+  // as well, perhaps with stacking instead of a for loop
+  
+  // nullspace and prioritization may not be the best plan. If the repulsion force is a potential
+  // force like a spring, then the damping should be a multiple of it in order to achieve critical
+  // damping. This could be achieved with a weight matrix!
+
+  // // nullspace of the applied repulsive force
+  // Eigen::MatrixXd repulsion_nullspace =  (Eigen::MatrixXd::Identity(7, 7) -
+  //                   jacobian.transpose() * jacobian_transpose_pinv);
+  
+  
+
+  // Eigen::ArrayXd desired_speeds = Eigen::ArrayXd::Zero(7);
+  // desired_speeds = desired_speeds.matrix();
+
+  // Eigen::MatrixXd T1(7,7);
+  // T1 = (repulsion_nullspace);
+  // pseudoInverse(T1, T1);
+
+  // Eigen::VectorXd tau_nullspace(7);
+  // tau_nullspace = T1;
+  // // repulsion_nullspace << (Eigen::MatrixXd::Identity(7, 7) -
+  // //                   jacobian.transpose() * jacobian_transpose_pinv) *
+  // //                   (nullspace_stiffness_ * config_control * (q_d_nullspace_ - q_) - //if config_control = true we control the whole robot configuration
+  // //                   (2.0 * sqrt(nullspace_stiffness_)) * dq_);  // if config control ) false we don't care about the joint position
+
+
 }
 
 controller_interface::return_type CartesianImpedanceController::update(const rclcpp::Time& /*time*/, const rclcpp::Duration& /*period*/) {  

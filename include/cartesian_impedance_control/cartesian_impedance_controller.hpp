@@ -33,6 +33,7 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Eigen>
+#include <boost/algorithm/clamp.hpp>
 
 #include <controller_interface/controller_interface.hpp>
 
@@ -100,6 +101,7 @@ public:
     Eigen::Matrix<double, 7, 1> saturateTorqueRate(const Eigen::Matrix<double, 7, 1>& tau_d_calculated, const Eigen::Matrix<double, 7, 1>& tau_J_d);
     Eigen::Matrix<double, 7, 1> calcRepulsiveTorque(Eigen::Matrix<double, 6, 7> repulsive_forces);   
     std::array<double, 6> convertToStdArray(const geometry_msgs::msg::WrenchStamped& wrench);
+    void normalized_rep_to_rep_forces(Eigen::Array<double, 6, 7> relative_forces);
     //State vectors and matrices
     std::array<double, 7> q_subscribed;
     std::array<double, 7> tau_J_d = {0,0,0,0,0,0,0};
@@ -180,6 +182,20 @@ public:
     double nullspace_stiffness_{0.001};
     double nullspace_stiffness_target_{0.001};
     
+    //Repulsion control variables
+    Eigen::Array<double, 7, 1> max_moments = {87., 87., 87., 87., 12., 12., 12.};             // Nm
+    double max_dist = 0.4;  // meters
+    double min_dist = 0.05; // meters
+    Eigen::Array<double, 7, 1> spring_constants = max_moments / (max_dist - min_dist);        // N, but spring constant!
+    
+    // // The spring constant so far is in joint space. It will later be transformed to be applied
+    // //pre jacobian, but for the 
+    // Eigen::Array<double, 7, 1> damping_constants = 2 * sqrt(spring_constants);                // N 
+    
+    // rescale these to get the right units for spring force. The idea here is that the
+    // max force on a joint should not violate moment constraints on its parent
+    spring_constants = spring_constants * 2;  //scaling factor of 1/0.5m to get a spring constant in N/m 
+    
 
     //Logging
     int outcounter = 0;
@@ -204,5 +220,8 @@ public:
     //Filter-parameters
     double filter_params_{0.001};
     int mode_ = 1;
+
+    // Timer Flags
+    rclcpp::Time repulsion_date;
 };
 }  // namespace cartesian_impedance_control
