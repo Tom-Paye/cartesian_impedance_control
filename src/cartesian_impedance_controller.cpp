@@ -250,17 +250,19 @@ void CartesianImpedanceController::normalized_rep_to_rep_forces(Eigen::Array<dou
   // Expect the first column to correspond to base link (attached to the ground, no DOF)
   // Expect any link after link 7 to be hands / fingers
   
-  Eigen::ArrayXd max_moments;
-  max_moments<<87., 87., 87., 87., 12., 12., 12.;
+  // Eigen::ArrayXd max_moments;
+  // max_moments<<87., 87., 87., 87., 12., 12., 12.;
 
-  for (int i=0;i<6;i++){
-    moments_array.row(i) += max_moments;
-    //this relates all spring forces and moments by a factor of 1m
-    // as in Nm / m = N, but a spring constant is in N/m, so we just say the force is just this
-    // spring moment constant applied 1m away 
-  }
+
+
+  // for (int i=0;i<6;i++){
+  //   moments_array.row(i) += max_moments;
+  //   //this relates all spring forces and moments by a factor of 1m
+  //   // as in Nm / m = N, but a spring constant is in N/m, so we just say the force is just this
+  //   // spring moment constant applied 1m away 
+  // }
   
-  relative_forces = relative_forces * moments_array * 2;
+  // relative_forces = relative_forces * moments_array * 2;
 
 
 
@@ -309,9 +311,9 @@ Eigen::Matrix<double, 7, 1> CartesianImpedanceController::calcRepulsiveTorque(Ei
 
 
     // Add a component for damping
-    Eigen::vector<double, 6> placeholder = {1., 1., 1., 1., 1., 1}
-    damping_constant = jacobian_i.transpose() * Sm * (placeholder*2*sqrt(spring_constant));
-    tau_damping_i = damping_constant * -dq_.array();
+    Eigen::Array<double, 6, 1> placeholder = {1., 1., 1., 1., 1., 1.};
+    Eigen::Matrix<double, 7, 1> damping_constant = jacobian_i.transpose() * Sm * (placeholder*2*sqrt(spring_constant)).matrix();
+    tau_damping_i = damping_constant.array() * -dq_.array();
     tau_damping = tau_damping + tau_damping_i;
 
 

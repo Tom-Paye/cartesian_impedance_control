@@ -186,7 +186,9 @@ public:
     Eigen::Array<double, 7, 1> max_moments = {87., 87., 87., 87., 12., 12., 12.};             // Nm
     double max_dist = 0.4;  // meters
     double min_dist = 0.05; // meters
-    Eigen::Array<double, 7, 1> spring_constants = max_moments / (max_dist - min_dist);        // N, but spring constant!
+    Eigen::Array<double, 7, 1> spring_constants = max_moments / (max_dist - min_dist) *2.;        // N, but spring constant!
+    //scaling factor of 1/0.5m to get a spring constant in N/m 
+
     
     // // The spring constant so far is in joint space. It will later be transformed to be applied
     // //pre jacobian, but for the 
@@ -194,7 +196,6 @@ public:
     
     // rescale these to get the right units for spring force. The idea here is that the
     // max force on a joint should not violate moment constraints on its parent
-    spring_constants = spring_constants * 2;  //scaling factor of 1/0.5m to get a spring constant in N/m 
     
 
     //Logging
