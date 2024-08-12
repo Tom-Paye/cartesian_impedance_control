@@ -58,7 +58,7 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/cartesian_impedance_control/user_input_client")
     file(RPATH_CHANGE
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/cartesian_impedance_control/user_input_client"
-         OLD_RPATH "/home/tom/franka_ros2_ws/src/cartesian_impedance_control/build:/opt/ros/humble/lib:/home/tom/franka_ros2_ws/install/messages_fr3/lib:/home/tom/franka_ros2_ws/install/franka_semantic_components/lib:/home/tom/franka_ros2_ws/install/franka_hardware/lib:/home/tom/franka_ros2_ws/install/franka_msgs/lib:/opt/ros/humble/lib/x86_64-linux-gnu:"
+         OLD_RPATH "/home/tom/franka_ros2_ws/src/cartesian_impedance_control/build:/opt/ros/humble/lib:/home/tom/franka_ros2_ws/install/messages_fr3/lib:/home/tom/franka_ros2_ws/install/franka_semantic_components/lib:/home/tom/franka_ros2_ws/install/franka_hardware/lib:/home/tom/franka_ros2_ws/install/franka_msgs/lib:"
          NEW_RPATH "")
     if(CMAKE_INSTALL_DO_STRIP)
       execute_process(COMMAND "/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/cartesian_impedance_control/user_input_client")
@@ -78,7 +78,7 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libcartesian_impedance_control.so")
     file(RPATH_CHANGE
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libcartesian_impedance_control.so"
-         OLD_RPATH "/opt/ros/humble/lib:/home/tom/franka_ros2_ws/install/messages_fr3/lib:/home/tom/franka_ros2_ws/install/franka_semantic_components/lib:/home/tom/franka_ros2_ws/install/franka_hardware/lib:/home/tom/franka_ros2_ws/install/franka_msgs/lib:/opt/ros/humble/lib/x86_64-linux-gnu:"
+         OLD_RPATH "/opt/ros/humble/lib:/home/tom/franka_ros2_ws/install/messages_fr3/lib:/home/tom/franka_ros2_ws/install/franka_semantic_components/lib:/home/tom/franka_ros2_ws/install/franka_hardware/lib:/home/tom/franka_ros2_ws/install/franka_msgs/lib:"
          NEW_RPATH "")
     if(CMAKE_INSTALL_DO_STRIP)
       execute_process(COMMAND "/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libcartesian_impedance_control.so")

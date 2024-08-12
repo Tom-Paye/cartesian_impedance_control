@@ -48,6 +48,7 @@
 #include "franka_msgs/msg/errors.hpp"
 #include "messages_fr3/srv/set_pose.hpp"
 #include "messages_fr3/msg/array2d.hpp"
+#include "geometry_msgs/msg/wrench_stamped.hpp"
 
 #include "franka_semantic_components/franka_robot_model.hpp"
 #include "franka_semantic_components/franka_robot_state.hpp"
@@ -100,7 +101,7 @@ public:
     void arrayToMatrix(const std::array<double, 7>& inputArray, Eigen::Matrix<double, 7, 1>& resultMatrix);
     Eigen::Matrix<double, 7, 1> saturateTorqueRate(const Eigen::Matrix<double, 7, 1>& tau_d_calculated, const Eigen::Matrix<double, 7, 1>& tau_J_d);
     Eigen::Matrix<double, 7, 1> calcRepulsiveTorque(Eigen::Matrix<double, 6, 7> repulsive_forces);   
-    std::array<double, 6> convertToStdArray(const geometry_msgs::msg::WrenchStamped& wrench);
+    std::array<double, 6> convertToStdArray(geometry_msgs::msg::WrenchStamped& wrench);
     void normalized_rep_to_rep_forces(Eigen::Array<double, 6, 7> relative_forces);
     //State vectors and matrices
     std::array<double, 7> q_subscribed;
@@ -223,6 +224,6 @@ public:
     int mode_ = 1;
 
     // Timer Flags
-    rclcpp::Time repulsion_date;
+    double repulsion_date;
 };
 }  // namespace cartesian_impedance_control

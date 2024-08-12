@@ -5084,122 +5084,6 @@
 		},
 		{
 			"isExternal" : true,
-			"path" : "/opt/ros/humble/share/urdf/cmake/urdfConfig-version.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/share/urdf/cmake/urdfConfig.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/share/urdf/cmake/ament_cmake_export_include_directories-extras.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/share/ament_cmake_core/cmake/ament_cmake_coreConfig-version.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/share/ament_cmake_core/cmake/ament_cmake_coreConfig.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/share/urdf/cmake/ament_cmake_export_libraries-extras.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/share/urdf/cmake/ament_cmake_export_targets-extras.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/share/urdf/cmake/urdfExport.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/share/urdf/cmake/urdfExport-none.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/share/urdf/cmake/ament_cmake_export_dependencies-extras.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/share/ament_cmake_libraries/cmake/ament_cmake_librariesConfig-version.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/share/ament_cmake_libraries/cmake/ament_cmake_librariesConfig.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/share/ament_cmake_core/cmake/ament_cmake_coreConfig-version.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/share/ament_cmake_core/cmake/ament_cmake_coreConfig.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/share/urdf_parser_plugin/cmake/urdf_parser_pluginConfig-version.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/share/urdf_parser_plugin/cmake/urdf_parser_pluginConfig.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/share/urdf_parser_plugin/cmake/ament_cmake_export_targets-extras.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/share/urdf_parser_plugin/cmake/urdf_parser_plugin-exportExport.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/share/urdf_parser_plugin/cmake/ament_cmake_export_dependencies-extras.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/share/ament_cmake_libraries/cmake/ament_cmake_librariesConfig-version.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/share/ament_cmake_libraries/cmake/ament_cmake_librariesConfig.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/share/ament_cmake_core/cmake/ament_cmake_coreConfig-version.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/share/ament_cmake_core/cmake/ament_cmake_coreConfig.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/lib/x86_64-linux-gnu/urdfdom_headers/cmake/urdfdom_headers-config-version.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/lib/x86_64-linux-gnu/urdfdom_headers/cmake/urdfdom_headers-config.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/lib/x86_64-linux-gnu/urdfdom_headers/cmake/urdfdom_headersExport.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/lib/x86_64-linux-gnu/urdfdom/cmake/urdfdom-config.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/lib/x86_64-linux-gnu/urdfdom/cmake/urdfdomExport.cmake"
-		},
-		{
-			"isExternal" : true,
-			"path" : "/opt/ros/humble/lib/x86_64-linux-gnu/urdfdom/cmake/urdfdomExport-none.cmake"
-		},
-		{
-			"isExternal" : true,
 			"path" : "/opt/ros/humble/share/generate_parameter_library/cmake/generate_parameter_libraryConfig-version.cmake"
 		},
 		{
@@ -5579,6 +5463,14 @@
 		{
 			"isExternal" : true,
 			"path" : "/home/tom/franka_ros2_ws/install/messages_fr3/share/messages_fr3/cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake"
+		},
+		{
+			"isExternal" : true,
+			"path" : "/opt/ros/humble/share/geometry_msgs/cmake/geometry_msgsConfig-version.cmake"
+		},
+		{
+			"isExternal" : true,
+			"path" : "/opt/ros/humble/share/geometry_msgs/cmake/geometry_msgsConfig.cmake"
 		},
 		{
 			"isExternal" : true,

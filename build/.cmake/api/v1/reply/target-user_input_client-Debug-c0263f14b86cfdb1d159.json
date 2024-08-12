@@ -27,19 +27,19 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 59,
+				"line" : 61,
 				"parent" : 0
 			},
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 65,
+				"line" : 67,
 				"parent" : 0
 			},
 			{
 				"command" : 2,
 				"file" : 0,
-				"line" : 60,
+				"line" : 62,
 				"parent" : 0
 			},
 			{
@@ -109,10 +109,6 @@
 				},
 				{
 					"backtrace" : 3,
-					"path" : "/opt/ros/humble/include/urdf"
-				},
-				{
-					"backtrace" : 3,
 					"isSystem" : true,
 					"path" : "/home/tom/franka_ros2_ws/install/franka_msgs/include/franka_msgs"
 				},
@@ -155,11 +151,6 @@
 					"backtrace" : 3,
 					"isSystem" : true,
 					"path" : "/opt/ros/humble/include/rclcpp"
-				},
-				{
-					"backtrace" : 3,
-					"isSystem" : true,
-					"path" : "/opt/ros/humble/include/geometry_msgs"
 				},
 				{
 					"backtrace" : 3,
@@ -294,6 +285,11 @@
 				{
 					"backtrace" : 3,
 					"isSystem" : true,
+					"path" : "/opt/ros/humble/include/geometry_msgs"
+				},
+				{
+					"backtrace" : 3,
+					"isSystem" : true,
 					"path" : "/opt/ros/humble/include/action_msgs"
 				},
 				{
@@ -305,21 +301,6 @@
 					"backtrace" : 3,
 					"isSystem" : true,
 					"path" : "/opt/ros/humble/include/trajectory_msgs"
-				},
-				{
-					"backtrace" : 3,
-					"isSystem" : true,
-					"path" : "/opt/ros/humble/include/urdf_parser_plugin"
-				},
-				{
-					"backtrace" : 3,
-					"isSystem" : true,
-					"path" : "/opt/ros/humble/include/urdfdom_headers"
-				},
-				{
-					"backtrace" : 3,
-					"isSystem" : true,
-					"path" : "/opt/ros/humble/include/urdfdom"
 				}
 			],
 			"language" : "CXX",
@@ -327,7 +308,6 @@
 			{
 				"backtraces" : 
 				[
-					3,
 					3,
 					3,
 					3,
@@ -380,7 +360,7 @@
 				"role" : "flags"
 			},
 			{
-				"fragment" : "-Wl,-rpath,/home/tom/franka_ros2_ws/src/cartesian_impedance_control/build:/opt/ros/humble/lib:/home/tom/franka_ros2_ws/install/messages_fr3/lib:/home/tom/franka_ros2_ws/install/franka_semantic_components/lib:/home/tom/franka_ros2_ws/install/franka_hardware/lib:/home/tom/franka_ros2_ws/install/franka_msgs/lib:/opt/ros/humble/lib/x86_64-linux-gnu:",
+				"fragment" : "-Wl,-rpath,/home/tom/franka_ros2_ws/src/cartesian_impedance_control/build:/opt/ros/humble/lib:/home/tom/franka_ros2_ws/install/messages_fr3/lib:/home/tom/franka_ros2_ws/install/franka_semantic_components/lib:/home/tom/franka_ros2_ws/install/franka_hardware/lib:/home/tom/franka_ros2_ws/install/franka_msgs/lib:",
 				"role" : "libraries"
 			},
 			{
@@ -426,6 +406,38 @@
 			},
 			{
 				"fragment" : "/home/tom/franka_ros2_ws/install/messages_fr3/lib/libmessages_fr3__rosidl_generator_c.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/ros/humble/lib/libsensor_msgs__rosidl_generator_c.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/ros/humble/lib/libsensor_msgs__rosidl_typesupport_fastrtps_c.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/ros/humble/lib/libsensor_msgs__rosidl_typesupport_fastrtps_cpp.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/ros/humble/lib/libsensor_msgs__rosidl_typesupport_introspection_c.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/ros/humble/lib/libsensor_msgs__rosidl_typesupport_c.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/ros/humble/lib/libsensor_msgs__rosidl_typesupport_introspection_cpp.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/ros/humble/lib/libsensor_msgs__rosidl_typesupport_cpp.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/ros/humble/lib/libsensor_msgs__rosidl_generator_py.so",
 				"role" : "libraries"
 			},
 			{
@@ -554,38 +566,6 @@
 			},
 			{
 				"fragment" : "/home/tom/franka_ros2_ws/install/franka_msgs/lib/libfranka_msgs__rosidl_generator_c.so",
-				"role" : "libraries"
-			},
-			{
-				"fragment" : "/opt/ros/humble/lib/libsensor_msgs__rosidl_generator_c.so",
-				"role" : "libraries"
-			},
-			{
-				"fragment" : "/opt/ros/humble/lib/libsensor_msgs__rosidl_typesupport_fastrtps_c.so",
-				"role" : "libraries"
-			},
-			{
-				"fragment" : "/opt/ros/humble/lib/libsensor_msgs__rosidl_typesupport_fastrtps_cpp.so",
-				"role" : "libraries"
-			},
-			{
-				"fragment" : "/opt/ros/humble/lib/libsensor_msgs__rosidl_typesupport_introspection_c.so",
-				"role" : "libraries"
-			},
-			{
-				"fragment" : "/opt/ros/humble/lib/libsensor_msgs__rosidl_typesupport_c.so",
-				"role" : "libraries"
-			},
-			{
-				"fragment" : "/opt/ros/humble/lib/libsensor_msgs__rosidl_typesupport_introspection_cpp.so",
-				"role" : "libraries"
-			},
-			{
-				"fragment" : "/opt/ros/humble/lib/libsensor_msgs__rosidl_typesupport_cpp.so",
-				"role" : "libraries"
-			},
-			{
-				"fragment" : "/opt/ros/humble/lib/libsensor_msgs__rosidl_generator_py.so",
 				"role" : "libraries"
 			},
 			{
@@ -961,14 +941,6 @@
 				"role" : "libraries"
 			},
 			{
-				"fragment" : "/opt/ros/humble/lib/libtrajectory_msgs__rosidl_typesupport_c.so",
-				"role" : "libraries"
-			},
-			{
-				"fragment" : "/opt/ros/humble/lib/libtrajectory_msgs__rosidl_generator_c.so",
-				"role" : "libraries"
-			},
-			{
 				"fragment" : "/opt/ros/humble/lib/libgeometry_msgs__rosidl_generator_py.so",
 				"role" : "libraries"
 			},
@@ -977,11 +949,19 @@
 				"role" : "libraries"
 			},
 			{
+				"fragment" : "/opt/ros/humble/lib/libtrajectory_msgs__rosidl_typesupport_c.so",
+				"role" : "libraries"
+			},
+			{
 				"fragment" : "/opt/ros/humble/lib/libgeometry_msgs__rosidl_typesupport_c.so",
 				"role" : "libraries"
 			},
 			{
 				"fragment" : "/opt/ros/humble/lib/libstd_msgs__rosidl_typesupport_c.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/opt/ros/humble/lib/libtrajectory_msgs__rosidl_generator_c.so",
 				"role" : "libraries"
 			},
 			{
@@ -1030,6 +1010,10 @@
 			},
 			{
 				"fragment" : "/opt/ros/humble/lib/libclass_loader.so",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "/usr/lib/x86_64-linux-gnu/libconsole_bridge.so.1.0",
 				"role" : "libraries"
 			},
 			{
@@ -1278,50 +1262,6 @@
 			},
 			{
 				"fragment" : "-ldl",
-				"role" : "libraries"
-			},
-			{
-				"fragment" : "/opt/ros/humble/lib/x86_64-linux-gnu/liburdfdom_sensor.so.3.0",
-				"role" : "libraries"
-			},
-			{
-				"fragment" : "/opt/ros/humble/lib/x86_64-linux-gnu/liburdfdom_model_state.so.3.0",
-				"role" : "libraries"
-			},
-			{
-				"fragment" : "/opt/ros/humble/lib/x86_64-linux-gnu/liburdfdom_model.so.3.0",
-				"role" : "libraries"
-			},
-			{
-				"fragment" : "/opt/ros/humble/lib/x86_64-linux-gnu/liburdfdom_world.so.3.0",
-				"role" : "libraries"
-			},
-			{
-				"fragment" : "/opt/ros/humble/lib/liburdf.so",
-				"role" : "libraries"
-			},
-			{
-				"fragment" : "/opt/ros/humble/lib/x86_64-linux-gnu/liburdfdom_sensor.so.3.0",
-				"role" : "libraries"
-			},
-			{
-				"fragment" : "/opt/ros/humble/lib/x86_64-linux-gnu/liburdfdom_model_state.so.3.0",
-				"role" : "libraries"
-			},
-			{
-				"fragment" : "/opt/ros/humble/lib/x86_64-linux-gnu/liburdfdom_world.so.3.0",
-				"role" : "libraries"
-			},
-			{
-				"fragment" : "/opt/ros/humble/lib/x86_64-linux-gnu/liburdfdom_model.so.3.0",
-				"role" : "libraries"
-			},
-			{
-				"fragment" : "/usr/lib/x86_64-linux-gnu/libconsole_bridge.so.1.0",
-				"role" : "libraries"
-			},
-			{
-				"fragment" : "/usr/lib/x86_64-linux-gnu/libtinyxml.so",
 				"role" : "libraries"
 			}
 		],

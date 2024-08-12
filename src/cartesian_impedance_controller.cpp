@@ -191,7 +191,7 @@ controller_interface::CallbackReturn CartesianImpedanceController::on_deactivate
   return CallbackReturn::SUCCESS;
 }
 
-std::array<double, 6> CartesianImpedanceController::convertToStdArray(const geometry_msgs::msg::WrenchStamped& wrench) {
+std::array<double, 6> CartesianImpedanceController::convertToStdArray(geometry_msgs::msg::WrenchStamped& wrench) {
     std::array<double, 6> result;
     result[0] = wrench.wrench.force.x;
     result[1] = wrench.wrench.force.y;
@@ -203,7 +203,8 @@ std::array<double, 6> CartesianImpedanceController::convertToStdArray(const geom
 }
 
 void CartesianImpedanceController::topic_callback(const std::shared_ptr<franka_msgs::msg::FrankaRobotState> msg) {
-  O_F_ext_hat_K = convertToStdArray(msg->o_f_ext_hat_k);
+  std::array< double, 6 > O_F_ext_hat_K = msg->o_f_ext_hat_k;
+  // O_F_ext_hat_K = convertToStdArray(&wrench);
   arrayToMatrix(O_F_ext_hat_K, O_F_ext_hat_K_M);
 }
 
@@ -232,7 +233,7 @@ void CartesianImpedanceController::repulsion_topic_callback(const std::shared_pt
   // std::cout << "repulsive_forces received [N]" << std::endl;
   // std::cout << repulsive_forces << std::endl;
 
-  rclcpp::Time repulsion_date = get_node()->get_clock()->now();
+  repulsion_date = get_node()->get_clock()->now().seconds();
 
 }
 
@@ -292,7 +293,7 @@ Eigen::Matrix<double, 7, 1> CartesianImpedanceController::calcRepulsiveTorque(Ei
   // we first need to rescale the spring and damping coeffs by 1/next_link_dist to get the correct
   // units (N/m and N respectively)
   
-  if ((get_node()->get_clock()->now().seconds() - repulsion_date.seconds()) > 0.005) {
+  if ((get_node()->get_clock()->now().seconds() - repulsion_date) > 0.005) {
     return Eigen::MatrixXd::Zero(6, 7);
   }
 
