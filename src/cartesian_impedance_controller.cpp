@@ -221,7 +221,7 @@ void CartesianImpedanceController::repulsion_topic_callback(const std::shared_pt
     std::vector<double> array[6][7] = {};
   }
 
-  std::cout << "Dimensions are:"<< height << " by " << width << std::endl;
+  // std::cout << "Dimensions are:"<< height << " by " << width << std::endl;
   // Eigen::ArrayXXd rel_forces(6, 7);
   Eigen::Map<Eigen::Array<double, 6, 7>> rel_forces(array.data(), height, width);
   normalized_rep_to_rep_forces(rel_forces);
@@ -233,7 +233,7 @@ void CartesianImpedanceController::repulsion_topic_callback(const std::shared_pt
   // std::cout << "repulsive_forces received [N]" << std::endl;
   // std::cout << repulsive_forces << std::endl;
 
-  repulsion_date = get_node()->get_clock()->now().seconds();
+  repulsion_date = get_node()->get_clock()->now().nanoseconds();
 
 }
 
@@ -293,13 +293,18 @@ Eigen::Matrix<double, 7, 1> CartesianImpedanceController::calcRepulsiveTorque(Ei
   // we first need to rescale the spring and damping coeffs by 1/next_link_dist to get the correct
   // units (N/m and N respectively)
   
-  if ((get_node()->get_clock()->now().seconds() - repulsion_date) > 0.005) {
-    return Eigen::MatrixXd::Zero(6, 7);
+  double time_now = get_node()->get_clock()->now().nanoseconds();
+  // std::cout << "time" << std::endl;
+  // std::cout << time_now - repulsion_date << std::endl;
+  double d_00_t = (time_now - repulsion_date) *0.000000001;
+
+  if (repulsive_forces.isZero(0) || d_00_t > 0.2) {
+    return Eigen::MatrixXd::Zero(7, 1);
   }
 
-  Eigen::VectorXd tau_repulsion(7), tau_repulsion_i(7), tau_damping(7), tau_damping_i(7);
   tau_repulsion = tau_repulsion * 0; 
   tau_damping = tau_damping * 0;
+
   for (int i=0; i<num_joints; ++i) {
 
     double spring_constant = spring_constants(i);
@@ -308,22 +313,57 @@ Eigen::Matrix<double, 7, 1> CartesianImpedanceController::calcRepulsiveTorque(Ei
     tau_repulsion_i = jacobian_i.transpose() * Sm * (repulsive_forces.col(i)*spring_constant);
     // std::cout << "tau_repulsion_i [Nm]" << std::endl;
     // std::cout << tau_repulsion_i << std::endl;
+
+    // for (int j = 0; j<7; ++j) {
+    //   // std::cout << tau_repulsion_i(j) << std::endl;
+    //   if(tau_repulsion_i(j) != tau_repulsion_i(j)) {
+    //     std::cout << "tau_repulsion_i:" << std::endl;
+    //     std::cout << tau_repulsion_i << std::endl;
+    //     std::cout << "jacobian_i" << std::endl;
+    //     std::cout << jacobian_i << std::endl;
+    //     std::cout << "repulsive_forces.col(i) has Nans:" << std::endl;
+    //     std::cout << repulsive_forces.col(i) << std::endl;
+    //     std::cout << "spring_constant" << std::endl;
+    //     std::cout << spring_constant << std::endl;
+    //   }
+      
+      
+    // }
+      
+
     tau_repulsion = tau_repulsion + tau_repulsion_i;
 
 
-    // Add a component for damping
-    Eigen::Array<double, 6, 1> placeholder = {1., 1., 1., 1., 1., 1.};
-    Eigen::Matrix<double, 7, 1> damping_constant = jacobian_i.transpose() * Sm * (placeholder*2*sqrt(spring_constant)).matrix();
-    tau_damping_i = damping_constant.array() * -dq_.array();
+    // // Add a component for damping
+    // Eigen::Array<double, 6, 1> placeholder = {1., 1., 1., 1., 1., 1.};
+    // Eigen::Matrix<double, 7, 1> damping_constant = jacobian_i.transpose() * Sm * (placeholder*2*sqrt(spring_constant)).matrix();
+    // tau_damping_i = damping_constant.array() * -dq_.array() * 0.05;
+
+    // Eigen::Matrix<double, 6, 1> cart_spd = jacobian_i * dq_;
+    // double damping = 2*sqrt(spring_constant);
+    // tau_damping_i = damping * jacobian_i.transpose() * Sm * cart_spd;
+
+    tau_damping_i = - 2*sqrt(spring_constant) * dq_ * 0.05;
+
     tau_damping = tau_damping + tau_damping_i;
+    // std::cout << "tau_damping_i [Nm]" << std::endl;
+    // std::cout << tau_damping << std::endl;
 
 
 
   
   }
+
+  // std::cout << "tau_repulsion_part [Nm]" << std::endl;
+  // std::cout << tau_repulsion << std::endl;
+  // std::cout << "tau_damping_part [Nm]" << std::endl;
+  // std::cout << tau_damping << std::endl;
   // std::cout << "tau_repulsion raw [Nm]" << std::endl;
   // std::cout << tau_repulsion << std::endl;
   tau_repulsion = tau_repulsion + tau_damping;
+  // repulsive_forces = repulsive_forces * 0.99;
+
+  
 
   return(tau_repulsion);
 
