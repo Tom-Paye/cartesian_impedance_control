@@ -101,8 +101,8 @@ public:
     void arrayToMatrix(const std::array<double, 7>& inputArray, Eigen::Matrix<double, 7, 1>& resultMatrix);
     Eigen::Matrix<double, 7, 1> saturateTorqueRate(const Eigen::Matrix<double, 7, 1>& tau_d_calculated, const Eigen::Matrix<double, 7, 1>& tau_J_d);
     void calcRepulsiveTorque(Eigen::Matrix<double, 6, 7> repulsive_forces);   
-    std::array<double, 6> convertToStdArray(geometry_msgs::msg::WrenchStamped& wrench);
-    void normalized_rep_to_rep_forces(Eigen::Array<double, 6, 7> relative_forces);
+    // std::array<double, 6> convertToStdArray(geometry_msgs::msg::WrenchStamped& wrench);
+    // void normalized_rep_to_rep_forces(Eigen::Array<double, 6, 7> relative_forces);
     //State vectors and matrices
     std::array<double, 7> q_subscribed;
     std::array<double, 7> tau_J_d = {0,0,0,0,0,0,0};
@@ -182,12 +182,15 @@ public:
     Eigen::Matrix<double, 6, 1> error;                                                       // pose error (6d)
     double nullspace_stiffness_{0.001};
     double nullspace_stiffness_target_{0.001};
+    double impedance_limit_dist = 0.15;          // half-length of the cube outside of which spring impedance force is capped (mode 3)
     
     //Repulsion control variables
-    Eigen::Array<double, 7, 1> max_moments = {87., 87., 87., 87., 12., 12., 12.};             // Nm
+    Eigen::Array<double, 7, 1> max_admissible_moments = {87., 87., 87., 87., 12., 12., 12.};             // Nm
+    // Eigen::Array<double, 7, 1> max_admissible_moments = {87., 87., 87., 87., 40., 12., 12.};  // alternative form to motivate 2ndary rotation
+    Eigen::Array<double, 7, 1> max_moments = max_admissible_moments / 5.;  // Rescale to not use max forces
     double max_dist = 0.4;  // meters
     double min_dist = 0.05; // meters
-    Eigen::Array<double, 7, 1> spring_constants = max_moments / (max_dist - min_dist) * 0.06;        // N, but spring constant!
+    Eigen::Array<double, 7, 1> spring_constants = max_moments / (max_dist - min_dist) * 0.2;        // N, but spring constant!
     double prev_big_T = 0.;
     //scaling factor of 1/0.5m to get a spring constant in N/m 
 
@@ -196,13 +199,13 @@ public:
       Eigen::Matrix<double, 7, 1> tau_repulsion_part = Eigen::MatrixXd::Zero(7, 1);
       Eigen::Matrix<double, 7, 1> tau_damping = Eigen::MatrixXd::Zero(7, 1);
       Eigen::Matrix<double, 7, 1> tau_damping_i = Eigen::MatrixXd::Zero(7, 1);
-      Eigen::Array<double, 6, 7> mask = (repulsive_forces.array().abs() > 1e-10).cast<double>();
+      Eigen::Array<double, 6, 7> mask;
       Eigen::Matrix<double, 7, 1> unit_jt_spd = {1., 1., 1., 1., 1., 1., 1.};
 
     
     // // The spring constant so far is in joint space. It will later be transformed to be applied
     // //pre jacobian, but for the 
-    Eigen::Array<double, 7, 1> damping_constants = -2 * sqrt(spring_constants);                // N 
+    Eigen::Array<double, 7, 1> damping_constants = -5 * sqrt(spring_constants);                // N 
     
     // rescale these to get the right units for spring force. The idea here is that the
     // max force on a joint should not violate moment constraints on its parent
@@ -230,7 +233,7 @@ public:
 
     //Filter-parameters
     double filter_params_{0.001};
-    int mode_ = 1;
+    int mode_ = 3;
 
     // Timer Flags
     double repulsion_date;

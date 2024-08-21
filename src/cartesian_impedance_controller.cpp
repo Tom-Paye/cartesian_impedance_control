@@ -191,16 +191,16 @@ controller_interface::CallbackReturn CartesianImpedanceController::on_deactivate
   return CallbackReturn::SUCCESS;
 }
 
-std::array<double, 6> CartesianImpedanceController::convertToStdArray(geometry_msgs::msg::WrenchStamped& wrench) {
-    std::array<double, 6> result;
-    result[0] = wrench.wrench.force.x;
-    result[1] = wrench.wrench.force.y;
-    result[2] = wrench.wrench.force.z;
-    result[3] = wrench.wrench.torque.x;
-    result[4] = wrench.wrench.torque.y;
-    result[5] = wrench.wrench.torque.z;
-    return result;
-}
+// std::array<double, 6> CartesianImpedanceController::convertToStdArray(geometry_msgs::msg::WrenchStamped& wrench) {
+//     std::array<double, 6> result;
+//     result[0] = wrench.wrench.force.x;
+//     result[1] = wrench.wrench.force.y;
+//     result[2] = wrench.wrench.force.z;
+//     result[3] = wrench.wrench.torque.x;
+//     result[4] = wrench.wrench.torque.y;
+//     result[5] = wrench.wrench.torque.z;
+//     return result;
+// }
 
 void CartesianImpedanceController::topic_callback(const std::shared_ptr<franka_msgs::msg::FrankaRobotState> msg) {
   std::array< double, 6 > O_F_ext_hat_K = msg->o_f_ext_hat_k;
@@ -223,8 +223,8 @@ void CartesianImpedanceController::repulsion_topic_callback(const std::shared_pt
 
   // std::cout << "Dimensions are:"<< height << " by " << width << std::endl;
   // Eigen::ArrayXXd rel_forces(6, 7);
-  Eigen::Map<Eigen::Array<double, 6, 7>> rel_forces(array.data(), height, width);
-  normalized_rep_to_rep_forces(rel_forces);
+  // Eigen::Map<Eigen::Array<double, 6, 7>> rel_forces(array.data(), height, width);
+  // normalized_rep_to_rep_forces(rel_forces);
 
   Eigen::Map<Eigen::Matrix<double, 6, 7>> forces(array.data(), height, width);
   // Eigen::Matrix<double, 6, 7> forces = rel_forces.matrix();
@@ -295,111 +295,53 @@ void CartesianImpedanceController::calcRepulsiveTorque(Eigen::Matrix<double, 6, 
 
   // Alternative method : Convert neither stiffness nor damping to cartesian space, insctad apply them once in joint space
   
-  // double time_now = get_node()->get_clock()->now().nanoseconds();
+  double time_now = get_node()->get_clock()->now().nanoseconds();
   // std::cout << "time" << std::endl;
   // std::cout << time_now - repulsion_date << std::endl;
-  double d_00_t = (get_node()->get_clock()->now().nanoseconds() - repulsion_date) *0.000000001;
+  double d_00_t = (time_now - repulsion_date) *0.000000001;
 
-  if (repulsive_forces.isZero(0) || d_00_t > 0.4) {
-    tau_repulsion = tau_repulsion * 0;
+  if (repulsive_forces.isZero(0) || d_00_t > 0.01) {
+    tau_repulsion = tau_repulsion * 0.9994;
     return;
   }
 
+  mask = (repulsive_forces.array().abs()>1e-10).cast<double>();
   
-
-  if (d_00_t > 0.005) {
-    tau_repulsion = tau_repulsion_part;
+// F_impedance = -1 * (D * (jacobian * dq_) + K * error /*+ I_error*/);
+  if (d_00_t > 0.01) {
+    // std::cout << "d_00_t > 0.01" << std::endl;
+    tau_repulsion = (tau_repulsion_part.array() * spring_constants).matrix();
+    // tau_repulsion_part = tau_repulsion_part * 0.099999;
     tau_damping = tau_damping * 0;
     for (int i=0; i<num_joints; ++i) {
       std::array<double, 42> jacobian_array_i =  franka_robot_model_->getZeroJacobian(franka::Frame(i));
       Eigen::Map<Eigen::Matrix<double, 6, 7>> jacobian_i(jacobian_array_i.data());
+
       Eigen::Array<double, 6, 1> mask_col = mask.col(i);
-      Eigen::Array<double, 6, 1> unit_cart_spd = jacobian_i * unit_jt_spd;
+      Eigen::Array<double, 6, 1> unit_cart_spd = jacobian_i * dq_;  //unit_jt_spd
       tau_damping_i = jacobian_i.transpose() * Sm * (mask_col * unit_cart_spd.array()).matrix();
       tau_damping += tau_damping_i;
     }
   }
-  if (d_00_t <= 0.005) {
-    tau_repulsion = tau_repulsion * 0.;
-    tau_damping = tau_damping * 0;
+  if (d_00_t <= 0.01) {
+    // std::cout << "d_00_t <= 0.01" << std::endl;
+    tau_repulsion_part = tau_repulsion_part * 0.;
+    tau_damping = tau_damping * 0.;
     for (int i=0; i<num_joints; ++i) {
 
       std::array<double, 42> jacobian_array_i =  franka_robot_model_->getZeroJacobian(franka::Frame(i));
       Eigen::Map<Eigen::Matrix<double, 6, 7>> jacobian_i(jacobian_array_i.data());
+
       tau_repulsion_i = jacobian_i.transpose() * Sm * (repulsive_forces.col(i));
       tau_repulsion_part += tau_repulsion_i;
 
       Eigen::Array<double, 6, 1> mask_col = mask.col(i);
-      Eigen::Array<double, 6, 1> unit_cart_spd = jacobian_i * unit_jt_spd;
+      Eigen::Array<double, 6, 1> unit_cart_spd = jacobian_i * dq_;  //unit_jt_spd
       tau_damping_i = jacobian_i.transpose() * Sm * (mask_col * unit_cart_spd.array()).matrix();
       tau_damping += tau_damping_i;
     }
     tau_repulsion = (tau_repulsion_part.array() * spring_constants).matrix();
   }
-
-  
-
-  // for (int i=0; i<num_joints; ++i) {
-
-  //   // double spring_constant = spring_constants(i);
-  //   std::array<double, 42> jacobian_array_i =  franka_robot_model_->getZeroJacobian(franka::Frame(i));
-  //   Eigen::Map<Eigen::Matrix<double, 6, 7>> jacobian_i(jacobian_array_i.data());
-  //   tau_repulsion_i = jacobian_i.transpose() * Sm * (repulsive_forces.col(i));
-  //   // std::cout << "tau_repulsion_i [Nm]" << std::endl;
-  //   // std::cout << tau_repulsion_i << std::endl;
-
-  //   // for (int j = 0; j<7; ++j) {
-  //   //   // std::cout << tau_repulsion_i(j) << std::endl;
-  //   //   if(tau_repulsion_i(j) != tau_repulsion_i(j)) {
-  //   //     std::cout << "tau_repulsion_i:" << std::endl;
-  //   //     std::cout << tau_repulsion_i << std::endl;
-  //   //     std::cout << "jacobian_i" << std::endl;
-  //   //     std::cout << jacobian_i << std::endl;
-  //   //     std::cout << "repulsive_forces.col(i) has Nans:" << std::endl;
-  //   //     std::cout << repulsive_forces.col(i) << std::endl;
-  //   //     std::cout << "spring_constant" << std::endl;
-  //   //     std::cout << spring_constant << std::endl;
-  //   //   }
-      
-      
-  //   // }
-      
-
-  //   tau_repulsion_part += tau_repulsion_i;
-
-
-  //   // // Add a component for damping
-  //   // double damping_constant = damping_constants(i);
-
-  //   // Eigen::Array<double, 6, 1> placeholder = {1., 1., 1., 1., 1., 1.};
-  //   // Eigen::Matrix<double, 7, 1> damping_constant = jacobian_i.transpose() * Sm * (placeholder*2*sqrt(spring_constant)).matrix();
-  //   // tau_damping_i = damping_constant.array() * -dq_.array() * 0.05;
-
-  //   // Eigen::Matrix<double, 6, 1> cart_spd = jacobian_i * dq_;
-  //   // double damping = 2*sqrt(spring_constant);
-  //   // tau_damping_i = damping * jacobian_i.transpose() * Sm * cart_spd;
-
-    
-    
-  //   // Eigen::Array<double, 6, 1> cart_spd = (jacobian_i * dq_).array();
-  //   Eigen::Array<double, 6, 1> mask_col = mask.col(i);
-  //   // Eigen::Array<double, 6, 1> cart_damping_i = mask_col * cart_spd * (damping_constant);
-  //   // tau_damping_i = jacobian_i.transpose() * Sm * cart_damping_i.matrix();
-    
-  //   Eigen::Array<double, 6, 1> unit_cart_spd = jacobian_i * unit_jt_spd;
-  //   tau_damping_i = jacobian_i.transpose() * Sm * (mask_col * unit_cart_spd.array()).matrix();
-    
-
-  //   tau_damping += tau_damping_i;
-  //   // std::cout << "tau_damping_i [Nm]" << std::endl;
-  //   // std::cout << tau_damping << std::endl;
-
-
-
-  
-  // }
-
-  // tau_repulsion = (tau_repulsion_part.array() * spring_constants).matrix();
 
   tau_damping = (tau_damping.array() * damping_constants).matrix();
   // std::cout << "tau_repulsion_part [Nm]" << std::endl;
@@ -411,43 +353,6 @@ void CartesianImpedanceController::calcRepulsiveTorque(Eigen::Matrix<double, 6, 
   tau_repulsion = tau_repulsion + tau_damping;
   // repulsive_forces = repulsive_forces * 0.99;
 
-  
-
-  return;
-
-
-
-  // This part if we want to add a nullspace damper relative only to the repulsion, with lower
-  // priority than the repulsion. This might not make sense, as it will damp even commanded
-  // position even in the absence of repulsion (unless we only apply this when there is repulsion)
-  // plus, by defauld the inverse diff kinematics try to minimize speed during actuation, so
-  // this might actually do nothing
-  // This needs to be modified so the positions of every joint is calculated with its own jacobian,
-  // as well, perhaps with stacking instead of a for loop
-  
-  // nullspace and prioritization may not be the best plan. If the repulsion force is a potential
-  // force like a spring, then the damping should be a multiple of it in order to achieve critical
-  // damping. This could be achieved with a weight matrix!
-
-  // // nullspace of the applied repulsive force
-  // Eigen::MatrixXd repulsion_nullspace =  (Eigen::MatrixXd::Identity(7, 7) -
-  //                   jacobian.transpose() * jacobian_transpose_pinv);
-  
-  
-
-  // Eigen::ArrayXd desired_speeds = Eigen::ArrayXd::Zero(7);
-  // desired_speeds = desired_speeds.matrix();
-
-  // Eigen::MatrixXd T1(7,7);
-  // T1 = (repulsion_nullspace);
-  // pseudoInverse(T1, T1);
-
-  // Eigen::VectorXd tau_nullspace(7);
-  // tau_nullspace = T1;
-  // // repulsion_nullspace << (Eigen::MatrixXd::Identity(7, 7) -
-  // //                   jacobian.transpose() * jacobian_transpose_pinv) *
-  // //                   (nullspace_stiffness_ * config_control * (q_d_nullspace_ - q_) - //if config_control = true we control the whole robot configuration
-  // //                   (2.0 * sqrt(nullspace_stiffness_)) * dq_);  // if config control ) false we don't care about the joint position
 
 
 }
@@ -507,6 +412,15 @@ controller_interface::return_type CartesianImpedanceController::update(const rcl
     Theta = T*Lambda;
     F_impedance = -1*(Lambda * Theta.inverse() - IDENTITY) * F_ext;
     break;
+  case 3: {
+    Theta = Lambda;
+    Eigen::Array<double, 6, 1> p_sign_mask = (error.head(3).array()>0).cast<double>();
+    Eigen::Array<double, 6, 1> n_sign_mask = (error.head(3).array()<0).cast<double>();
+    Eigen::Array<double, 6, 1> pos_mask = error.head(3).array().min(impedance_limit_dist);
+    Eigen::Array<double, 6, 1> neg_mask = error.head(3).array().max(-impedance_limit_dist);
+    error.head(3) << (p_sign_mask * pos_mask + n_sign_mask * neg_mask);
+    F_impedance = -0.8 * (D * (jacobian * dq_) + K * error);
+  }
   
   default:
     break;
@@ -516,7 +430,7 @@ controller_interface::return_type CartesianImpedanceController::update(const rcl
   I_F_error += dt * Sf* (F_contact_des - F_ext);
   F_cmd = Sf*(0.4 * (F_contact_des - F_ext) + 0.9 * I_F_error + 0.9 * F_contact_des);
 
-  Eigen::VectorXd tau_task(7), tau_nullspace(7), tau_d(7), tau_impedance(7), tau_repulsion(7);
+  Eigen::VectorXd tau_task(7), tau_nullspace(7), tau_d(7), tau_impedance(7);
   pseudoInverse(jacobian.transpose(), jacobian_transpose_pinv);
 
   calcRepulsiveTorque(repulsive_forces);
@@ -526,6 +440,7 @@ controller_interface::return_type CartesianImpedanceController::update(const rcl
                     (2.0 * sqrt(nullspace_stiffness_)) * dq_);  // if config control ) false we don't care about the joint position
 
   tau_impedance = jacobian.transpose() * Sm * (F_impedance /*+ F_repulsion + F_potential*/) + jacobian.transpose() * Sf * F_cmd;
+  // tau_impedance << saturateTorqueRate(tau_impedance, tau_J_d_M * 0.85);  // Saturate impedance torque to prioritize repulsion
   auto tau_d_placeholder = tau_repulsion + tau_impedance + tau_nullspace + coriolis; //add nullspace and coriolis components to desired torque
   tau_d << tau_d_placeholder;
   tau_d << saturateTorqueRate(tau_d, tau_J_d_M);  // Saturate torque rate to avoid discontinuities
@@ -541,28 +456,37 @@ controller_interface::return_type CartesianImpedanceController::update(const rcl
     // std::cout << O_F_ext_hat_K_M << std::endl;
     // std::cout << "Lambda  Thetha.inv(): " << std::endl;
     // std::cout << Lambda*Theta.inverse() << std::endl;
-    // std::cout << "tau_d" << std::endl;
-    // std::cout << tau_d << std::endl;
+    std::cout << "tau_d" << std::endl;
+    std::cout << tau_d << std::endl;
     // std::cout << "--------" << std::endl;
     // std::cout << "tau_nullspace" << std::endl;
     // std::cout << tau_nullspace << std::endl;
     // std::cout << "--------" << std::endl;
-    // std::cout << "tau_impedance" << std::endl;
-    // std::cout << tau_impedance << std::endl;
+    std::cout << "tau_impedance" << std::endl;
+    std::cout << tau_impedance << std::endl;
     // std::cout << "--------" << std::endl;
     // std::cout << "coriolis" << std::endl;
     // std::cout << coriolis << std::endl;
-    // std::cout << "--------" << std::endl;
-    // std::cout << "tau_repulsion" << std::endl;
-    // std::cout << tau_repulsion << std::endl;
+    std::cout << "--------" << std::endl;
+    std::cout << "tau_repulsion" << std::endl;
+    std::cout << tau_repulsion << std::endl;
     // std::cout << "Inertia scaling [m]: " << std::endl;
     // std::cout << T << std::endl;
-    double big_T = tau_impedance.array().abs().sum();
-    if (big_T > prev_big_T) {
-      std::cout << "big_T" << std::endl;
-      std::cout << big_T << std::endl;
-      prev_big_T = big_T;
-    }
+
+    
+    // std::cout << "mask" << std::endl;
+    // std::cout << mask << std::endl;
+    // std::cout << "tau_repulsion_part" << std::endl;
+    // std::cout << tau_repulsion_part << std::endl;
+    // std::cout << "tau_damping" << std::endl;
+    // std::cout << tau_damping << std::endl;
+    // double big_T = tau_impedance.array().abs().sum();
+    // if (big_T > prev_big_T) {
+    //   std::cout << "big_T" << std::endl;
+    //   std::cout << big_T << std::endl;
+    //   prev_big_T = big_T;
+    // }
+    // std::cout << "--------" << std::endl;
   }
   outcounter++;
   update_stiffness_and_references();
