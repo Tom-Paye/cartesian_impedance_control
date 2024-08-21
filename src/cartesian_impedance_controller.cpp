@@ -456,20 +456,20 @@ controller_interface::return_type CartesianImpedanceController::update(const rcl
     // std::cout << O_F_ext_hat_K_M << std::endl;
     // std::cout << "Lambda  Thetha.inv(): " << std::endl;
     // std::cout << Lambda*Theta.inverse() << std::endl;
-    std::cout << "tau_d" << std::endl;
-    std::cout << tau_d << std::endl;
+    // std::cout << "tau_d" << std::endl;
+    // std::cout << tau_d << std::endl;
     // std::cout << "--------" << std::endl;
     // std::cout << "tau_nullspace" << std::endl;
     // std::cout << tau_nullspace << std::endl;
     // std::cout << "--------" << std::endl;
-    std::cout << "tau_impedance" << std::endl;
-    std::cout << tau_impedance << std::endl;
+    // std::cout << "tau_impedance" << std::endl;
+    // std::cout << tau_impedance << std::endl;
     // std::cout << "--------" << std::endl;
     // std::cout << "coriolis" << std::endl;
     // std::cout << coriolis << std::endl;
-    std::cout << "--------" << std::endl;
-    std::cout << "tau_repulsion" << std::endl;
-    std::cout << tau_repulsion << std::endl;
+    // std::cout << "--------" << std::endl;
+    // std::cout << "tau_repulsion" << std::endl;
+    // std::cout << tau_repulsion << std::endl;
     // std::cout << "Inertia scaling [m]: " << std::endl;
     // std::cout << T << std::endl;
 
