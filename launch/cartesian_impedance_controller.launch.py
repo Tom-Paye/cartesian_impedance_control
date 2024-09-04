@@ -73,6 +73,7 @@ def generate_launch_description():
             package='controller_manager',
             executable='spawner',
             arguments=['cartesian_impedance_controller', "-c", "/controller_manager"],
+            # prefix=['gdbserver localhost:3000'],
             output='screen',
         ),
     ])

@@ -154,7 +154,10 @@ CallbackReturn CartesianImpedanceController::on_configure(const rclcpp_lifecycle
   try {
     // rclcpp::QoS qos_profile(10); // Depth of the message queue
     // qos_profile.reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE);
-    repulsion_subscriber = get_node()->create_subscription<messages_fr3::msg::Array2d>(
+    // repulsion_subscriber = get_node()->create_subscription<messages_fr3::msg::Array2d>(
+    // "repulsion_forces", 10, 
+    // std::bind(&CartesianImpedanceController::repulsion_topic_callback, this, std::placeholders::_1));
+    repulsion_subscriber = get_node()->create_subscription<messages_fr3::msg::IrregularDistArray>(
     "repulsion_forces", 10, 
     std::bind(&CartesianImpedanceController::repulsion_topic_callback, this, std::placeholders::_1));
     std::cout << "Succesfully subscribed to repulsion_force_broadcaster" << std::endl;
@@ -208,30 +211,56 @@ void CartesianImpedanceController::topic_callback(const std::shared_ptr<franka_m
   arrayToMatrix(O_F_ext_hat_K, O_F_ext_hat_K_M);
 }
 
-void CartesianImpedanceController::repulsion_topic_callback(const std::shared_ptr<messages_fr3::msg::Array2d> msg) {
-  int width = msg->width;
-  int height = msg->height;
-  std::vector<double> array = msg->array;
+// void CartesianImpedanceController::repulsion_topic_callback(const std::shared_ptr<messages_fr3::msg::Array2d> msg) {
+//   int width = msg->width;
+//   int height = msg->height;
+//   std::vector<double> array = msg->array;
+//   // for (int idx=0; idx<42; idx++) {
+//   //   array[idx] = msg->array[idx];
+//   // }
+//   if (width != 7 || height != 6) {
+//     std::cout << "Error: repulsion_forces message has the wrong dimensions" << std::endl;
+//     std::cout << "Dimensions are:"<< height << " by " << width << std::endl;
+//     std::vector<double> array[6][7] = {};
+//   }
+
+//   // std::cout << "Dimensions are:"<< height << " by " << width << std::endl;
+//   // Eigen::ArrayXXd rel_forces(6, 7);
+//   // Eigen::Map<Eigen::Array<double, 6, 7>> rel_forces(array.data(), height, width);
+//   // normalized_rep_to_rep_forces(rel_forces);
+
+//   Eigen::Map<Eigen::Matrix<double, 6, 7>> forces(array.data(), height, width);
+//   // Eigen::Matrix<double, 6, 7> forces = rel_forces.matrix();
+  
+//   repulsive_dists = forces;
+//   // std::cout << "repulsive_dists received [N]" << std::endl;
+//   // std::cout << repulsive_dists << std::endl;
+
+//   repulsion_date = get_node()->get_clock()->now().nanoseconds();
+
+// }
+
+void CartesianImpedanceController::repulsion_topic_callback(const std::shared_ptr<messages_fr3::msg::IrregularDistArray> msg) {
+  dimension_2 = msg->dimension2;
+  irregular_vector = msg->array;
+  irregular_matrices.clear();
   // for (int idx=0; idx<42; idx++) {
   //   array[idx] = msg->array[idx];
   // }
-  if (width != 7 || height != 6) {
-    std::cout << "Error: repulsion_forces message has the wrong dimensions" << std::endl;
-    std::cout << "Dimensions are:"<< height << " by " << width << std::endl;
-    std::vector<double> array[6][7] = {};
+  int bookmark = 0;
+  for (int i=0; i<7; i++){
+    int dim = dimension_2[i];
+    Eigen::MatrixXd matrix(6, dim);
+        for (int i = 0; i < 6; ++i) {
+            for (int j = 0; j < dim; ++j) {
+                matrix(i, j) = irregular_vector[bookmark+i*dim+j];
+            }
+        }
+    // Eigen::MatrixXd matrix= irregular_vector.[slice(bookmark, bookmark + dim * 6, 1)];
+    // Eigen::Matrix<double, 6, dim> matrix= irregular_vector.pop_back(dim * 6);
+    irregular_matrices.push_back(matrix);
+    bookmark += 6*dim;
   }
-
-  // std::cout << "Dimensions are:"<< height << " by " << width << std::endl;
-  // Eigen::ArrayXXd rel_forces(6, 7);
-  // Eigen::Map<Eigen::Array<double, 6, 7>> rel_forces(array.data(), height, width);
-  // normalized_rep_to_rep_forces(rel_forces);
-
-  Eigen::Map<Eigen::Matrix<double, 6, 7>> forces(array.data(), height, width);
-  // Eigen::Matrix<double, 6, 7> forces = rel_forces.matrix();
-  
-  repulsive_dists = forces;
-  // std::cout << "repulsive_dists received [N]" << std::endl;
-  // std::cout << repulsive_dists << std::endl;
 
   repulsion_date = get_node()->get_clock()->now().nanoseconds();
 
@@ -282,7 +311,157 @@ void CartesianImpedanceController::updateJointStates() {
 }
 
  
-void CartesianImpedanceController::calcRepulsiveTorque(Eigen::Matrix<double, 6, 7> repulsive_dists) {
+// void CartesianImpedanceController::calcRepulsiveTorque(Eigen::Matrix<double, 6, 7> repulsive_dists) {
+//   // PLAN: for each force in the vector, apply the jacobian of the joint to get the torque inputs
+//   // std::cout << "repulsive_dists [N]" << std::endl;
+//   // std::cout << repulsive_dists << std::endl;
+  
+//   double time_now = get_node()->get_clock()->now().nanoseconds();
+//   // std::cout << "time" << std::endl;
+//   // std::cout << time_now - repulsion_date << std::endl;
+//   double d_00_t = (time_now - repulsion_date) *0.000000001;
+
+//  // typical cam frequency is 22 hz ==> delay is 1/20 = 0.05s
+//   if (repulsive_dists.isZero(0) || d_00_t > 0.05) {
+//     // tau_repulsion = tau_repulsion * 0.9997;
+
+//     timeout_scaling = timeout_scaling * 0.9997;
+//     // repulsion_damping_multipliers = damping_constants.array().topRows();
+
+//     tau_damping = tau_damping * 0;
+//     for (int i=0; i<num_joints; ++i) {
+//       std::array<double, 42> jacobian_array_i =  franka_robot_model_->getZeroJacobian(franka::Frame(i));
+//       Eigen::Map<Eigen::Matrix<double, 6, 7>> jacobian_i(jacobian_array_i.data());
+
+//       // Eigen::Array<double, 6, 1> mask_col = mask.col(i);
+//       Eigen::Array<double, 6, 1> unit_cart_spd = jacobian_i * dq_;  //unit_jt_spd
+//       // tau_damping_i = jacobian_i.transpose() * Sm * (mask_col * unit_cart_spd.array()).matrix();
+//       cart_damping_force_scalar = (repulsion_damping_multipliers.col(i) * unit_cart_spd.array()).sum();
+//       cart_damping_redirection = repulsion_damping_mask.col(i) * -1 * std::signbit(cart_damping_force_scalar);
+//       cart_damping_force = cart_damping_force_scalar * cart_damping_redirection;
+//       tau_damping_i = jacobian_i.transpose() * Sm * cart_damping_force.matrix();
+      
+//       tau_damping_i = jacobian_i.transpose() * Sm * cart_damping_force;
+//       cart_damping_forces.col(i) = cart_damping_force;
+      
+//       tau_damping += tau_damping_i;
+//     }
+
+//     return;
+//   }
+  
+//   // F_impedance = -1 * (D * (jacobian * dq_) + K * error /*+ I_error*/);
+//   if (d_00_t > 0.006) {
+//     // std::cout << "d_00_t > 0.01" << std::endl;
+//     //// tau_repulsion = (tau_spring.array() * spring_constants).matrix();
+//     // tau_spring = tau_spring * 0.099999;
+//     tau_damping = tau_damping * 0;
+//     for (int i=0; i<num_joints; ++i) {
+//       std::array<double, 42> jacobian_array_i =  franka_robot_model_->getZeroJacobian(franka::Frame(i));
+//       Eigen::Map<Eigen::Matrix<double, 6, 7>> jacobian_i(jacobian_array_i.data());
+
+//       // Eigen::Array<double, 6, 1> mask_col = mask.col(i);
+//       Eigen::Array<double, 6, 1> unit_cart_spd = jacobian_i * dq_;  //unit_jt_spd
+//       // tau_damping_i = jacobian_i.transpose() * Sm * (mask_col * unit_cart_spd.array()).matrix();
+//       cart_damping_force_scalar = (repulsion_damping_multipliers.col(i) * unit_cart_spd.array()).sum();
+//       cart_damping_redirection = repulsion_damping_mask.col(i) * -1 * std::signbit(cart_damping_force_scalar);
+//       cart_damping_force = cart_damping_force_scalar * cart_damping_redirection;
+//       tau_damping_i = jacobian_i.transpose() * Sm * cart_damping_force.matrix();
+
+//       tau_damping_i = jacobian_i.transpose() * Sm * cart_damping_force;
+//       cart_damping_forces.col(i) = cart_damping_force;
+
+//       tau_damping += tau_damping_i;
+//     }
+//   }
+
+  
+//   if (d_00_t <= 0.006) {
+//     // std::cout << "d_00_t <= 0.01" << std::endl;
+
+//     // mask = (repulsive_dists.array().abs()>1e-10).cast<double>();       // every col is a joint, with a 1 in every row where here is a rep force
+
+//     //////////////////////// Calculate damper in cartesian space along the direction of the spring
+//     repulsion_translation = repulsive_dists.topRows(3);
+
+//     repulsion_translation_norms = repulsion_translation.colwise().norm();
+
+//     repulsion_directions = (repulsion_translation.array().rowwise() /= repulsion_translation_norms);
+//     repulsion_directions = repulsion_directions.unaryExpr([](double v) { return std::isnan(v) ? 0.0 : v; });
+
+//     repulsion_damping_mask.topRows(3) = repulsion_directions;
+
+//     repulsion_damping_multipliers = (repulsion_damping_mask.matrix() * damping_constants).array();
+//     // This determines the orientation and strength of the damper asociated with each spring force
+
+//     ////////////////////////
+
+
+//     timeout_scaling = 1.;
+//     tau_spring = tau_spring * 0.;
+//     tau_damping = tau_damping * 0.;
+
+//     cart_spring_forces = repulsive_dists * spring_constants;
+
+//     for (int i=0; i<num_joints; ++i) {
+
+//       std::array<double, 42> jacobian_array_i =  franka_robot_model_->getZeroJacobian(franka::Frame(i));
+//       Eigen::Map<Eigen::Matrix<double, 6, 7>> jacobian_i(jacobian_array_i.data());
+
+      
+//       tau_spring_i = jacobian_i.transpose() * Sm * (cart_spring_forces.col(i));
+//       // tau_spring_i = jacobian_i.transpose() * Sm * (repulsive_dists.col(i));
+
+//       /////////////////// Nonlinear APF
+//       Fpot = nonlin_stiffness * (1/D - 1/Q) ** 0.6
+
+//       ///////////////////
+//       tau_spring += tau_spring_i;
+
+//       // Eigen::Array<double, 6, 1> mask_col = mask.col(i);
+
+//       Eigen::Array<double, 6, 1> unit_cart_spd = jacobian_i * dq_;  //unit_jt_spd
+
+//       // tau_damping_i = jacobian_i.transpose() * Sm * (mask_col * unit_cart_spd.array()).matrix();
+//       cart_damping_force_scalar = (repulsion_damping_multipliers.col(i) * unit_cart_spd.array()).sum();
+//       cart_damping_redirection = repulsion_damping_mask.col(i) * -1 * std::signbit(cart_damping_force_scalar);
+//       cart_damping_force = cart_damping_force_scalar * cart_damping_redirection;
+//       tau_damping_i = jacobian_i.transpose() * Sm * cart_damping_force.matrix();
+
+//       cart_damping_forces.col(i) = cart_damping_force;
+
+
+//       tau_damping += tau_damping_i;
+//     }
+//     // tau_repulsion = (tau_spring.array() * spring_constants).matrix();
+//   }
+
+//   // TODO: change these so K and D are applied before the jacobians, as intended
+  
+//   // Eigen::Array<double, 7, 1> p_sign_mask = (tau_repulsion.array()>0).cast<double>();
+//   // Eigen::Array<double, 7, 1> n_sign_mask = (tau_repulsion.array()<0).cast<double>();
+//   // Eigen::Array<double, 7, 1> pos_mask = tau_repulsion.array().min(max_moments);
+//   // Eigen::Array<double, 7, 1> neg_mask = tau_repulsion.array().max(-max_moments);
+//   // tau_repulsion << (p_sign_mask * pos_mask + n_sign_mask * neg_mask);
+  
+//   // tau_damping = (tau_damping.array() * damping_constants).matrix();
+
+//   // std::cout << "tau_spring [Nm]" << std::endl;
+//   // std::cout << tau_repulsion << std::endl;
+//   // std::cout << "tau_damping_part [Nm]" << std::endl;
+//   // std::cout << tau_damping << std::endl;
+//   // std::cout << "tau_repulsion raw [Nm]" << std::endl;
+//   // std::cout << tau_repulsion << std::endl;
+//   tau_repulsion = (tau_spring.array()*timeout_scaling + tau_damping.array()*std::sqrt(timeout_scaling)).matrix();
+//   // repulsive_dists = repulsive_dists * 0.99;
+
+
+  
+
+
+// }
+
+void CartesianImpedanceController::calcRepulsiveTorque(std::vector<Eigen::MatrixXd> irregular_matrices) {
   // PLAN: for each force in the vector, apply the jacobian of the joint to get the torque inputs
   // std::cout << "repulsive_dists [N]" << std::endl;
   // std::cout << repulsive_dists << std::endl;
@@ -292,139 +471,203 @@ void CartesianImpedanceController::calcRepulsiveTorque(Eigen::Matrix<double, 6, 
   // std::cout << time_now - repulsion_date << std::endl;
   double d_00_t = (time_now - repulsion_date) *0.000000001;
 
- // typical cam frequency is 22 hz ==> delay is 1/20 = 0.05s
-  if (repulsive_dists.isZero(0) || d_00_t > 0.05) {
-    // tau_repulsion = tau_repulsion * 0.9997;
+//  // typical cam frequency is 22 hz ==> delay is 1/20 = 0.05s
+//   if (repulsive_dists.isZero(0) || d_00_t > 0.05) {
+//     // tau_repulsion = tau_repulsion * 0.9997;
 
-    timeout_scaling = timeout_scaling * 0.9997;
-    // repulsion_damping_multipliers = damping_constants.array().topRows();
+//     timeout_scaling = timeout_scaling * 0.9997;
+//     // repulsion_damping_multipliers = damping_constants.array().topRows();
 
-    tau_damping = tau_damping * 0;
+//     tau_damping = tau_damping * 0;
+//     for (int i=0; i<num_joints; ++i) {
+//       std::array<double, 42> jacobian_array_i =  franka_robot_model_->getZeroJacobian(franka::Frame(i));
+//       Eigen::Map<Eigen::Matrix<double, 6, 7>> jacobian_i(jacobian_array_i.data());
+
+//       // Eigen::Array<double, 6, 1> mask_col = mask.col(i);
+//       Eigen::Array<double, 6, 1> unit_cart_spd = jacobian_i * dq_;  //unit_jt_spd
+//       // tau_damping_i = jacobian_i.transpose() * Sm * (mask_col * unit_cart_spd.array()).matrix();
+//       cart_damping_force_scalar = (repulsion_damping_multipliers.col(i) * unit_cart_spd.array()).sum();
+//       cart_damping_redirection = repulsion_damping_mask.col(i) * -1 * std::signbit(cart_damping_force_scalar);
+//       cart_damping_force = cart_damping_force_scalar * cart_damping_redirection;
+//       tau_damping_i = jacobian_i.transpose() * Sm * cart_damping_force.matrix();
+      
+//       tau_damping_i = jacobian_i.transpose() * Sm * cart_damping_force;
+//       cart_damping_forces.col(i) = cart_damping_force;
+      
+//       tau_damping += tau_damping_i;
+//     }
+
+//     return;
+//   }
+  
+//   // F_impedance = -1 * (D * (jacobian * dq_) + K * error /*+ I_error*/);
+//   if (d_00_t > 0.006) {
+//     // std::cout << "d_00_t > 0.01" << std::endl;
+//     //// tau_repulsion = (tau_spring.array() * spring_constants).matrix();
+//     // tau_spring = tau_spring * 0.099999;
+//     tau_damping = tau_damping * 0;
+//     for (int i=0; i<num_joints; ++i) {
+//       std::array<double, 42> jacobian_array_i =  franka_robot_model_->getZeroJacobian(franka::Frame(i));
+//       Eigen::Map<Eigen::Matrix<double, 6, 7>> jacobian_i(jacobian_array_i.data());
+
+//       // Eigen::Array<double, 6, 1> mask_col = mask.col(i);
+//       Eigen::Array<double, 6, 1> unit_cart_spd = jacobian_i * dq_;  //unit_jt_spd
+//       // tau_damping_i = jacobian_i.transpose() * Sm * (mask_col * unit_cart_spd.array()).matrix();
+//       cart_damping_force_scalar = (repulsion_damping_multipliers.col(i) * unit_cart_spd.array()).sum();
+//       cart_damping_redirection = repulsion_damping_mask.col(i) * -1 * std::signbit(cart_damping_force_scalar);
+//       cart_damping_force = cart_damping_force_scalar * cart_damping_redirection;
+//       tau_damping_i = jacobian_i.transpose() * Sm * cart_damping_force.matrix();
+
+//       tau_damping_i = jacobian_i.transpose() * Sm * cart_damping_force;
+//       cart_damping_forces.col(i) = cart_damping_force;
+
+//       tau_damping += tau_damping_i;
+//     }
+//   }
+
+  
+  // if (d_00_t <= 0.006) {
+  //   // std::cout << "d_00_t <= 0.01" << std::endl;
+
+  //   // mask = (repulsive_dists.array().abs()>1e-10).cast<double>();       // every col is a joint, with a 1 in every row where here is a rep force
+
+  //   //////////////////////// Calculate damper in cartesian space along the direction of the spring
+  //   repulsion_translation = repulsive_dists.topRows(3);
+
+  //   repulsion_translation_norms = repulsion_translation.colwise().norm();
+
+  //   repulsion_directions = (repulsion_translation.array().rowwise() /= repulsion_translation_norms);
+  //   repulsion_directions = repulsion_directions.unaryExpr([](double v) { return std::isnan(v) ? 0.0 : v; });
+
+  //   repulsion_damping_mask.topRows(3) = repulsion_directions;
+
+  //   repulsion_damping_multipliers = (repulsion_damping_mask.matrix() * damping_constants).array();
+  //   // This determines the orientation and strength of the damper asociated with each spring force
+
+  //   ////////////////////////
+
+
+    // timeout_scaling = 1.;
+    // tau_spring = tau_spring * 0.;
+    // tau_damping = tau_damping * 0.;
+    tau_repulsion = tau_repulsion * 0.;
+
+  //   cart_spring_forces = repulsive_dists * spring_constants;
+
     for (int i=0; i<num_joints; ++i) {
+
+      // Initialize the size-varying matrices
+      // int dim = dimension_2[i];
+      // Eigen::ArrayXd distances(6, dim);
+      // Eigen::ArrayXd Fpot_norms(1, dim), damping_coeffs(1, dim), damp_colinear_len(1, dim), Fdamp_norms(1, dim), Frep_norms(1, dim);
+      // Eigen::ArrayXd Frep_all(6, dim);
+
+      // Eigen::ArrayXd repulsion_translation(3, dim);
+      // Eigen::ArrayXd repulsion_translation_norms(1, dim);
+      // Eigen::ArrayXd repulsion_directions(3, dim);
+
+      int dim = dimension_2[i];
+      distances.resize(6, dim);
+      Fpot_norms.resize(1, dim); damping_coeffs.resize(1, dim); damp_colinear_len.resize(1, dim); Fdamp_norms.resize(1, dim);
+      Frep_norms.resize(1, dim);
+      Frep_all.resize(6, dim);
+
+      repulsion_translation.resize(3, dim);
+      repulsion_translation_norms.resize(1, dim);
+      repulsion_directions.resize(3, dim);
+
+
+      // Get relevant robot data
       std::array<double, 42> jacobian_array_i =  franka_robot_model_->getZeroJacobian(franka::Frame(i));
       Eigen::Map<Eigen::Matrix<double, 6, 7>> jacobian_i(jacobian_array_i.data());
 
-      // Eigen::Array<double, 6, 1> mask_col = mask.col(i);
-      Eigen::Array<double, 6, 1> unit_cart_spd = jacobian_i * dq_;  //unit_jt_spd
-      // tau_damping_i = jacobian_i.transpose() * Sm * (mask_col * unit_cart_spd.array()).matrix();
-      cart_damping_force_scalar = (repulsion_damping_multipliers.col(i) * unit_cart_spd.array()).sum();
-      cart_damping_redirection = repulsion_damping_mask.col(i) * -1 * std::signbit(cart_damping_force_scalar);
-      cart_damping_force = cart_damping_force_scalar * cart_damping_redirection;
-      tau_damping_i = jacobian_i.transpose() * Sm * cart_damping_force.matrix();
+      Eigen::Array<double, 6, 1> unit_cart_spd = jacobian_i * dq_;
+
+      // Get body dists and directions
+      distances = irregular_matrices[i];
+      repulsion_translation = distances.topRows(3);
+
+      repulsion_translation_norms = repulsion_translation.colwise().norm();
+
+      repulsion_directions = (repulsion_translation.array().rowwise() /= repulsion_translation_norms.transpose());
+      repulsion_directions = repulsion_directions.unaryExpr([](double v) { return std::isnan(v) ? 0.0 : v; });
+
+      // Get cartesian force norms along the direction body --> robot
+      Fpot_norms = nonlin_stiffness * (repulsion_translation_norms.inverse() - 1/max_dist).pow(0.6);
+
+      // damping_coeffs = 2 * (Fpot_norms / repulsion_translation_norms).sqrt(); 
+      damping_coeffs = 2 * Fpot_norms.sqrt(); 
+
+      damp_colinear_len = (repulsion_directions * unit_cart_spd.topRows(3).array()).sum();
+      Fdamp_norms = damping_coeffs * damp_colinear_len * (damp_colinear_len * damp_colinear_len.abs().inverse()) * -1;
+
+      Frep_norms = Fpot_norms + Fdamp_norms;
       
-      tau_damping_i = jacobian_i.transpose() * Sm * cart_damping_force;
-      cart_damping_forces.col(i) = cart_damping_force;
-      
-      tau_damping += tau_damping_i;
-    }
 
-    return;
-  }
-  
-  // F_impedance = -1 * (D * (jacobian * dq_) + K * error /*+ I_error*/);
-  if (d_00_t > 0.006) {
-    // std::cout << "d_00_t > 0.01" << std::endl;
-    //// tau_repulsion = (tau_spring.array() * spring_constants).matrix();
-    // tau_spring = tau_spring * 0.099999;
-    tau_damping = tau_damping * 0;
-    for (int i=0; i<num_joints; ++i) {
-      std::array<double, 42> jacobian_array_i =  franka_robot_model_->getZeroJacobian(franka::Frame(i));
-      Eigen::Map<Eigen::Matrix<double, 6, 7>> jacobian_i(jacobian_array_i.data());
+      // giving the forces a dimension again in cartesian space
+      Frep_all = repulsion_directions.rowwise() * Frep_norms.transpose();
 
-      // Eigen::Array<double, 6, 1> mask_col = mask.col(i);
-      Eigen::Array<double, 6, 1> unit_cart_spd = jacobian_i * dq_;  //unit_jt_spd
-      // tau_damping_i = jacobian_i.transpose() * Sm * (mask_col * unit_cart_spd.array()).matrix();
-      cart_damping_force_scalar = (repulsion_damping_multipliers.col(i) * unit_cart_spd.array()).sum();
-      cart_damping_redirection = repulsion_damping_mask.col(i) * -1 * std::signbit(cart_damping_force_scalar);
-      cart_damping_force = cart_damping_force_scalar * cart_damping_redirection;
-      tau_damping_i = jacobian_i.transpose() * Sm * cart_damping_force.matrix();
+      Frep = Frep_all.rowwise().sum();
 
-      tau_damping_i = jacobian_i.transpose() * Sm * cart_damping_force;
-      cart_damping_forces.col(i) = cart_damping_force;
+      tau_repulsion += jacobian_i.transpose() * Sm * Frep.matrix();
 
-      tau_damping += tau_damping_i;
-    }
-  }
-
-  
-  if (d_00_t <= 0.006) {
-    // std::cout << "d_00_t <= 0.01" << std::endl;
-
-    // mask = (repulsive_dists.array().abs()>1e-10).cast<double>();       // every col is a joint, with a 1 in every row where here is a rep force
-
-    //////////////////////// Calculate damper in cartesian space along the direction of the spring
-    repulsion_translation = repulsive_dists.topRows(3);
-
-    repulsion_translation_norms = repulsion_translation.colwise().norm();
-
-    repulsion_directions = (repulsion_translation.array().rowwise() /= repulsion_translation_norms);
-    repulsion_directions = repulsion_directions.unaryExpr([](double v) { return std::isnan(v) ? 0.0 : v; });
-
-    repulsion_damping_mask.topRows(3) = repulsion_directions;
-
-    repulsion_damping_multipliers = (repulsion_damping_mask.matrix() * damping_constants).array();
-    // This determines the orientation and strength of the damper asociated with each spring force
-
-    ////////////////////////
-
-
-    timeout_scaling = 1.;
-    tau_spring = tau_spring * 0.;
-    tau_damping = tau_damping * 0.;
-
-    cart_spring_forces = repulsive_dists * spring_constants;
-
-    for (int i=0; i<num_joints; ++i) {
-
-      std::array<double, 42> jacobian_array_i =  franka_robot_model_->getZeroJacobian(franka::Frame(i));
-      Eigen::Map<Eigen::Matrix<double, 6, 7>> jacobian_i(jacobian_array_i.data());
 
       
-      tau_spring_i = jacobian_i.transpose() * Sm * (cart_spring_forces.col(i));
-      // tau_spring_i = jacobian_i.transpose() * Sm * (repulsive_dists.col(i));
 
-      tau_spring += tau_spring_i;
-
-      // Eigen::Array<double, 6, 1> mask_col = mask.col(i);
-
-      Eigen::Array<double, 6, 1> unit_cart_spd = jacobian_i * dq_;  //unit_jt_spd
-
-      // tau_damping_i = jacobian_i.transpose() * Sm * (mask_col * unit_cart_spd.array()).matrix();
-      cart_damping_force_scalar = (repulsion_damping_multipliers.col(i) * unit_cart_spd.array()).sum();
-      cart_damping_redirection = repulsion_damping_mask.col(i) * -1 * std::signbit(cart_damping_force_scalar);
-      cart_damping_force = cart_damping_force_scalar * cart_damping_redirection;
-      tau_damping_i = jacobian_i.transpose() * Sm * cart_damping_force.matrix();
-
-      cart_damping_forces.col(i) = cart_damping_force;
-
-
-      tau_damping += tau_damping_i;
     }
-    // tau_repulsion = (tau_spring.array() * spring_constants).matrix();
-  }
 
-  // TODO: change these so K and D are applied before the jacobians, as intended
-  
-  // Eigen::Array<double, 7, 1> p_sign_mask = (tau_repulsion.array()>0).cast<double>();
-  // Eigen::Array<double, 7, 1> n_sign_mask = (tau_repulsion.array()<0).cast<double>();
-  // Eigen::Array<double, 7, 1> pos_mask = tau_repulsion.array().min(max_moments);
-  // Eigen::Array<double, 7, 1> neg_mask = tau_repulsion.array().max(-max_moments);
-  // tau_repulsion << (p_sign_mask * pos_mask + n_sign_mask * neg_mask);
-  
-  // tau_damping = (tau_damping.array() * damping_constants).matrix();
+    // //logging
+    //   cart_spring_forces = repulsion_directions.rowwise() * Fpot_norms;
+    //   cart_damping_forces = repulsion_directions.rowwise() * Fdamp_norms;
 
-  // std::cout << "tau_spring [Nm]" << std::endl;
-  // std::cout << tau_repulsion << std::endl;
-  // std::cout << "tau_damping_part [Nm]" << std::endl;
-  // std::cout << tau_damping << std::endl;
-  // std::cout << "tau_repulsion raw [Nm]" << std::endl;
-  // std::cout << tau_repulsion << std::endl;
-  tau_repulsion = (tau_spring.array()*timeout_scaling + tau_damping.array()*std::sqrt(timeout_scaling)).matrix();
-  // repulsive_dists = repulsive_dists * 0.99;
+    
 
 
-  
 
+
+
+
+
+
+
+
+
+
+
+  //     // std::array<double, 42> jacobian_array_i =  franka_robot_model_->getZeroJacobian(franka::Frame(i));
+  //     // Eigen::Map<Eigen::Matrix<double, 6, 7>> jacobian_i(jacobian_array_i.data());
+
+      
+  //     tau_spring_i = jacobian_i.transpose() * Sm * (cart_spring_forces.col(i));
+  //     // tau_spring_i = jacobian_i.transpose() * Sm * (repulsive_dists.col(i));
+
+  //     /////////////////// Nonlinear APF
+  //     Fpot = nonlin_stiffness * (1/D - 1/Q) ** 0.6
+
+  //     ///////////////////
+  //     tau_spring += tau_spring_i;
+
+  //     // Eigen::Array<double, 6, 1> mask_col = mask.col(i);
+
+  //     Eigen::Array<double, 6, 1> unit_cart_spd = jacobian_i * dq_;  //unit_jt_spd
+
+  //     // tau_damping_i = jacobian_i.transpose() * Sm * (mask_col * unit_cart_spd.array()).matrix();
+  //     cart_damping_force_scalar = (repulsion_damping_multipliers.col(i) * unit_cart_spd.array()).sum();
+  //     cart_damping_redirection = repulsion_damping_mask.col(i) * -1 * std::signbit(cart_damping_force_scalar);
+  //     cart_damping_force = cart_damping_force_scalar * cart_damping_redirection;
+  //     tau_damping_i = jacobian_i.transpose() * Sm * cart_damping_force.matrix();
+
+  //     cart_damping_forces.col(i) = cart_damping_force;
+
+
+  //     tau_damping += tau_damping_i;
+  //   }
+  //   // tau_repulsion = (tau_spring.array() * spring_constants).matrix();
+  // }
+
+ 
+  // tau_repulsion = (tau_spring.array()*timeout_scaling + tau_damping.array()*std::sqrt(timeout_scaling)).matrix();
+  // // repulsive_dists = repulsive_dists * 0.99;
 
 }
 
@@ -505,7 +748,8 @@ controller_interface::return_type CartesianImpedanceController::update(const rcl
   Eigen::VectorXd tau_task(7), tau_nullspace(7), tau_d(7), tau_impedance(7);
   pseudoInverse(jacobian.transpose(), jacobian_transpose_pinv);
 
-  calcRepulsiveTorque(repulsive_dists);
+  // calcRepulsiveTorque(repulsive_dists);
+  calcRepulsiveTorque(irregular_matrices);
   tau_nullspace << (Eigen::MatrixXd::Identity(7, 7) -
                     jacobian.transpose() * jacobian_transpose_pinv) *
                     (nullspace_stiffness_ * config_control * (q_d_nullspace_ - q_) - //if config_control = true we control the whole robot configuration
@@ -540,8 +784,8 @@ controller_interface::return_type CartesianImpedanceController::update(const rcl
     // std::cout << "coriolis" << std::endl;
     // std::cout << coriolis << std::endl;
     // std::cout << "--------" << std::endl;
-    // std::cout << "tau_repulsion" << std::endl;
-    // std::cout << tau_repulsion << std::endl;
+    std::cout << "tau_repulsion" << std::endl;
+    std::cout << tau_repulsion << std::endl;
     // std::cout << "Inertia scaling [m]: " << std::endl;
     // std::cout << T << std::endl;
 
@@ -559,14 +803,14 @@ controller_interface::return_type CartesianImpedanceController::update(const rcl
     // std::cout << "spring_constants" << std::endl;
     // std::cout << spring_constants << std::endl;
 
-    std::cout << "cart_spring_forces" << std::endl;
-    std::cout << cart_spring_forces << std::endl;
+    // std::cout << "cart_spring_forces" << std::endl;
+    // std::cout << cart_spring_forces << std::endl;
 
-    std::cout << "cart_damping_forces" << std::endl;
-    std::cout << cart_damping_forces << std::endl;
+    // std::cout << "cart_damping_forces" << std::endl;
+    // std::cout << cart_damping_forces << std::endl;
 
-    std::cout << "tau_repulsion" << std::endl;
-    std::cout << tau_repulsion << std::endl;
+    // std::cout << "tau_repulsion" << std::endl;
+    // std::cout << tau_repulsion << std::endl;
 
     
     // std::cout << "repulsion_translation" << std::endl;
@@ -586,54 +830,54 @@ controller_interface::return_type CartesianImpedanceController::update(const rcl
     // std::cout << "--------" << std::endl;
   }
 
-  if (outcounter % 20/update_frequency == 0){
-    if (csv_counter == 50*10){
-      outFile1.open(path1);
-      outFile2.open(path2);
-      outFile3.open(path3);
-    }
+  // if (outcounter % 20/update_frequency == 0){
+  //   if (csv_counter == 50*10){
+  //     outFile1.open(path1);
+  //     outFile2.open(path2);
+  //     outFile3.open(path3);
+  //   }
 
-    if (outFile1.is_open()) {
-        for (int i = 0; i < cart_damping_forces.rows(); ++i) {
-            for (int j = 0; j < cart_damping_forces.cols(); ++j) {
-                outFile1 << cart_damping_forces(i, j);
-                if (j < cart_damping_forces.cols() - 1) {
-                    outFile1 << ",";  // Add comma between values
-                }
-            }
-            outFile1 << "\n";  // Newline at the end of each row
-        }
-    }
-    if (outFile2.is_open()) {
-        for (int i = 0; i < cart_spring_forces.rows(); ++i) {
-            for (int j = 0; j < cart_spring_forces.cols(); ++j) {
-                outFile2 << cart_spring_forces(i, j);
-                if (j < cart_spring_forces.cols() - 1) {
-                    outFile2 << ",";  // Add comma between values
-                }
-            }
-            outFile2 << "\n";  // Newline at the end of each row
-        }
-    }
-    if (outFile3.is_open()) {
-        for (int i = 0; i < position.rows(); ++i) {
-            for (int j = 0; j < position.cols(); ++j) {
-                outFile3 << position(i, j);
-                if (j < position.cols() - 1) {
-                    outFile3 << ",";  // Add comma between values
-                }
-            }
-            outFile3 << "\n";  // Newline at the end of each row
-        }
-    }
+  //   if (outFile1.is_open()) {
+  //       for (int i = 0; i < cart_damping_forces.rows(); ++i) {
+  //           for (int j = 0; j < cart_damping_forces.cols(); ++j) {
+  //               outFile1 << cart_damping_forces(i, j);
+  //               if (j < cart_damping_forces.cols() - 1) {
+  //                   outFile1 << ",";  // Add comma between values
+  //               }
+  //           }
+  //           outFile1 << "\n";  // Newline at the end of each row
+  //       }
+  //   }
+  //   if (outFile2.is_open()) {
+  //       for (int i = 0; i < cart_spring_forces.rows(); ++i) {
+  //           for (int j = 0; j < cart_spring_forces.cols(); ++j) {
+  //               outFile2 << cart_spring_forces(i, j);
+  //               if (j < cart_spring_forces.cols() - 1) {
+  //                   outFile2 << ",";  // Add comma between values
+  //               }
+  //           }
+  //           outFile2 << "\n";  // Newline at the end of each row
+  //       }
+  //   }
+  //   if (outFile3.is_open()) {
+  //       for (int i = 0; i < position.rows(); ++i) {
+  //           for (int j = 0; j < position.cols(); ++j) {
+  //               outFile3 << position(i, j);
+  //               if (j < position.cols() - 1) {
+  //                   outFile3 << ",";  // Add comma between values
+  //               }
+  //           }
+  //           outFile3 << "\n";  // Newline at the end of each row
+  //       }
+  //   }
 
-    csv_counter++;
-    if (csv_counter == 50 * 60){
-      outFile1.close();
-      outFile2.close();
-      outFile3.close();
-    }
-  }
+  //   csv_counter++;
+  //   if (csv_counter == 50 * 60){
+  //     outFile1.close();
+  //     outFile2.close();
+  //     outFile3.close();
+  //   }
+  // }
 
 
   outcounter++;

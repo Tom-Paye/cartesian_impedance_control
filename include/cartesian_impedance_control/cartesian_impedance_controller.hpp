@@ -48,6 +48,7 @@
 #include "franka_msgs/msg/errors.hpp"
 #include "messages_fr3/srv/set_pose.hpp"
 #include "messages_fr3/msg/array2d.hpp"
+#include "messages_fr3/msg/irregular_dist_array.hpp"
 #include "geometry_msgs/msg/wrench_stamped.hpp"
 
 #include "franka_semantic_components/franka_robot_model.hpp"
@@ -92,18 +93,21 @@ public:
     //Nodes
     rclcpp::Subscription<franka_msgs::msg::FrankaRobotState>::SharedPtr franka_state_subscriber = nullptr;
     rclcpp::Service<messages_fr3::srv::SetPose>::SharedPtr pose_srv_;
-    rclcpp::Subscription<messages_fr3::msg::Array2d>::SharedPtr repulsion_subscriber = nullptr;
+    // rclcpp::Subscription<messages_fr3::msg::Array2d>::SharedPtr repulsion_subscriber = nullptr;
+    rclcpp::Subscription<messages_fr3::msg::IrregularDistArray>::SharedPtr repulsion_subscriber = nullptr;
 
 
     //Functions
     void topic_callback(const std::shared_ptr<franka_msgs::msg::FrankaRobotState> msg);
-    void repulsion_topic_callback(const std::shared_ptr<messages_fr3::msg::Array2d> msg);
+    // void repulsion_topic_callback(const std::shared_ptr<messages_fr3::msg::Array2d> msg);
+    void repulsion_topic_callback(const std::shared_ptr<messages_fr3::msg::IrregularDistArray> msg);
     void updateJointStates();
     void update_stiffness_and_references();
     void arrayToMatrix(const std::array<double, 6>& inputArray, Eigen::Matrix<double, 6, 1>& resultMatrix);
     void arrayToMatrix(const std::array<double, 7>& inputArray, Eigen::Matrix<double, 7, 1>& resultMatrix);
     Eigen::Matrix<double, 7, 1> saturateTorqueRate(const Eigen::Matrix<double, 7, 1>& tau_d_calculated, const Eigen::Matrix<double, 7, 1>& tau_J_d);
-    void calcRepulsiveTorque(Eigen::Matrix<double, 6, 7> repulsive_dists);   
+    // void calcRepulsiveTorque(Eigen::Matrix<double, 6, 7> repulsive_dists);   
+    void calcRepulsiveTorque(std::vector<Eigen::MatrixXd> irregular_matrices);   
     // std::array<double, 6> convertToStdArray(geometry_msgs::msg::WrenchStamped& wrench);
     // void normalized_rep_to_rep_forces(Eigen::Array<double, 6, 7> relative_forces);
     //State vectors and matrices
@@ -232,9 +236,9 @@ public:
       Eigen::Array<double, 6, 7> repulsion_damping_mask = Eigen::MatrixXd::Zero(6, 7);
       
       Eigen::Array<double, 6, 7> repulsion_damping_multipliers;
-      Eigen::Matrix<double, 3, 7> repulsion_translation;
-      Eigen::Array<double, 1, 7> repulsion_translation_norms;
-      Eigen::Array<double, 3, 7> repulsion_directions;
+      // Eigen::Matrix<double, 3, 7> repulsion_translation;
+      // Eigen::Array<double, 1, 7> repulsion_translation_norms;
+      // Eigen::Array<double, 3, 7> repulsion_directions;
 
       Eigen::Array<double, 6, 1> cart_damping_redirection;
       double cart_damping_force_scalar;
@@ -248,6 +252,34 @@ public:
     
     double obj_rescale = 0.8;
     double timeout_scaling = 1.;
+
+
+    //////////////////// Subscriber for all forces
+    std::vector<int> dimension_2;
+    std::vector<double> irregular_vector;
+    std::vector<Eigen::MatrixXd> irregular_matrices;
+
+
+
+    // Variables for alternative rep controller
+    // Eigen::ArrayXd distances, Fpot_norms, damping_coeffs, damp_colinear_len, Fdamp_norms, Frep_norms, Frep_all
+    Eigen::Array<double, 6, 1> Frep;
+    double nonlin_stiffness = 4.;
+
+    int dim = 20;
+    Eigen::ArrayXd distances;
+    Eigen::ArrayXd Fpot_norms, damping_coeffs, damp_colinear_len, Fdamp_norms, Frep_norms;
+    Eigen::ArrayXd Frep_all;
+
+    Eigen::ArrayXd repulsion_translation;
+    Eigen::ArrayXd repulsion_translation_norms;
+    Eigen::ArrayXd repulsion_directions;
+
+    
+
+    ////////////////////
+
+
 
     // Error logging
     int csv_counter = 0;
