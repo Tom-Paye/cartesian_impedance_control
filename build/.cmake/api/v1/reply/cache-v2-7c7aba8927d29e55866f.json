@@ -2718,30 +2718,6 @@
 			"value" : "/home/tom/franka_ros2_ws/install/messages_fr3/share/messages_fr3/cmake"
 		},
 		{
-			"name" : "onelib",
-			"properties" : 
-			[
-				{
-					"name" : "HELPSTRING",
-					"value" : "Path to a library."
-				}
-			],
-			"type" : "FILEPATH",
-			"value" : "/opt/ros/humble/lib/x86_64-linux-gnu/liburdfdom_world.so"
-		},
-		{
-			"name" : "onelibd",
-			"properties" : 
-			[
-				{
-					"name" : "HELPSTRING",
-					"value" : "Path to a library."
-				}
-			],
-			"type" : "FILEPATH",
-			"value" : "onelibd-NOTFOUND"
-		},
-		{
 			"name" : "parameter_traits_DIR",
 			"properties" : 
 			[
@@ -3372,54 +3348,6 @@
 			],
 			"type" : "PATH",
 			"value" : "/opt/ros/humble/share/unique_identifier_msgs/cmake"
-		},
-		{
-			"name" : "urdf_DIR",
-			"properties" : 
-			[
-				{
-					"name" : "HELPSTRING",
-					"value" : "The directory containing a CMake configuration file for urdf."
-				}
-			],
-			"type" : "PATH",
-			"value" : "/opt/ros/humble/share/urdf/cmake"
-		},
-		{
-			"name" : "urdf_parser_plugin_DIR",
-			"properties" : 
-			[
-				{
-					"name" : "HELPSTRING",
-					"value" : "The directory containing a CMake configuration file for urdf_parser_plugin."
-				}
-			],
-			"type" : "PATH",
-			"value" : "/opt/ros/humble/share/urdf_parser_plugin/cmake"
-		},
-		{
-			"name" : "urdfdom_DIR",
-			"properties" : 
-			[
-				{
-					"name" : "HELPSTRING",
-					"value" : "The directory containing a CMake configuration file for urdfdom."
-				}
-			],
-			"type" : "PATH",
-			"value" : "/opt/ros/humble/lib/x86_64-linux-gnu/urdfdom/cmake"
-		},
-		{
-			"name" : "urdfdom_headers_DIR",
-			"properties" : 
-			[
-				{
-					"name" : "HELPSTRING",
-					"value" : "The directory containing a CMake configuration file for urdfdom_headers."
-				}
-			],
-			"type" : "PATH",
-			"value" : "/opt/ros/humble/lib/x86_64-linux-gnu/urdfdom_headers/cmake"
 		},
 		{
 			"name" : "xmllint_BIN",
