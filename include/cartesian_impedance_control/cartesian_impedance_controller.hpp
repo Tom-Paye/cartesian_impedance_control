@@ -267,13 +267,17 @@ public:
     double nonlin_stiffness = 4.;
 
     int dim = 20;
-    Eigen::ArrayXd distances;
-    Eigen::ArrayXd Fpot_norms, damping_coeffs, damp_colinear_len, Fdamp_norms, Frep_norms;
-    Eigen::ArrayXd Frep_all;
+    Eigen::Array<double, 6, 49> distances;
+    Eigen::Array<double, 1, 49> Fpot_norms;
+    Eigen::Array<double, 6, 49> Frep_all;
+    Eigen::Array<double, 1, 49> damping_coeffs;
+    Eigen::Array<double, 1, 49> damp_colinear_len;
+    Eigen::Array<double, 1, 49> Fdamp_norms;
+    Eigen::Array<double, 1, 49> Frep_norms;
 
-    Eigen::ArrayXd repulsion_translation;
-    Eigen::ArrayXd repulsion_translation_norms;
-    Eigen::ArrayXd repulsion_directions;
+    Eigen::Array<double, 3, 49> repulsion_translation;
+    Eigen::Array<double, 1, 49> repulsion_translation_norms;
+    Eigen::Array<double, 3, 49> repulsion_directions;
 
     
 

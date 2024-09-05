@@ -589,7 +589,7 @@ void CartesianImpedanceController::calcRepulsiveTorque(std::vector<Eigen::Matrix
 
       repulsion_translation_norms = repulsion_translation.colwise().norm();
 
-      repulsion_directions = (repulsion_translation.array().rowwise() /= repulsion_translation_norms.transpose());
+      repulsion_directions = (repulsion_translation.array().rowwise() /= repulsion_translation_norms);
       repulsion_directions = repulsion_directions.unaryExpr([](double v) { return std::isnan(v) ? 0.0 : v; });
 
       // Get cartesian force norms along the direction body --> robot
@@ -598,14 +598,14 @@ void CartesianImpedanceController::calcRepulsiveTorque(std::vector<Eigen::Matrix
       // damping_coeffs = 2 * (Fpot_norms / repulsion_translation_norms).sqrt(); 
       damping_coeffs = 2 * Fpot_norms.sqrt(); 
 
-      damp_colinear_len = (repulsion_directions * unit_cart_spd.topRows(3).array()).sum();
+      damp_colinear_len = (repulsion_directions.colwise() * unit_cart_spd.topRows(3).array()).sum();
       Fdamp_norms = damping_coeffs * damp_colinear_len * (damp_colinear_len * damp_colinear_len.abs().inverse()) * -1;
 
       Frep_norms = Fpot_norms + Fdamp_norms;
       
 
       // giving the forces a dimension again in cartesian space
-      Frep_all = repulsion_directions.rowwise() * Frep_norms.transpose();
+      Frep_all.topRows(3) = repulsion_directions.rowwise() * Frep_norms;
 
       Frep = Frep_all.rowwise().sum();
 
