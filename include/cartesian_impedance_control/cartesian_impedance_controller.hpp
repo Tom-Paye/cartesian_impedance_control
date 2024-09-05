@@ -107,7 +107,7 @@ public:
     void arrayToMatrix(const std::array<double, 7>& inputArray, Eigen::Matrix<double, 7, 1>& resultMatrix);
     Eigen::Matrix<double, 7, 1> saturateTorqueRate(const Eigen::Matrix<double, 7, 1>& tau_d_calculated, const Eigen::Matrix<double, 7, 1>& tau_J_d);
     // void calcRepulsiveTorque(Eigen::Matrix<double, 6, 7> repulsive_dists);   
-    void calcRepulsiveTorque(std::vector<Eigen::MatrixXd> irregular_matrices);   
+    void calcRepulsiveTorque(std::vector<double> irregular_vector);   
     // std::array<double, 6> convertToStdArray(geometry_msgs::msg::WrenchStamped& wrench);
     // void normalized_rep_to_rep_forces(Eigen::Array<double, 6, 7> relative_forces);
     //State vectors and matrices
@@ -209,7 +209,7 @@ public:
     
     // Max moment on each joint is (87., 87., 87., 87., 12., 12., 12.) Nm
     Eigen::Array<double, 7, 1> force_allocation = {3., 3., 1.5, 1., 1., 1., 1.};                          // how to scale forces based on EE force
-    double max_EE_repulsion_force = 8;                                                         // [N]
+    double max_EE_repulsion_force = 8.;                                                         // [N]
     Eigen::Array<double, 7, 1> max_spring = (force_allocation * max_EE_repulsion_force);           // Max spring rep forces in N
 
     Eigen::Matrix<double, 7, 7> spring_constants = (max_spring/(max_dist-min_dist)).matrix().asDiagonal(); // [N/m]
@@ -247,6 +247,8 @@ public:
       Eigen::Array<double,6,7> cart_damping_forces;
       Eigen::Matrix<double,6,1> cart_damping_force;
 
+      
+
     
     // Eigen::Array<double, 7, 1> damping_constants = -6 * sqrt(spring_constants);                // N 
     
@@ -255,29 +257,49 @@ public:
 
 
     //////////////////// Subscriber for all forces
-    std::vector<int> dimension_2;
+    std::vector<int> dimension_2 = {0, 0, 0, 0, 0, 0, 0};
     std::vector<double> irregular_vector;
     std::vector<Eigen::MatrixXd> irregular_matrices;
+
+    Eigen::ArrayXXd matrix = Eigen::ArrayXXd::Zero(6, 49);
+
+    int bookmark = 0;
 
 
 
     // Variables for alternative rep controller
-    // Eigen::ArrayXd distances, Fpot_norms, damping_coeffs, damp_colinear_len, Fdamp_norms, Frep_norms, Frep_all
-    Eigen::Array<double, 6, 1> Frep;
+    // Eigen::ArrayXXd distances, Fpot_norms, damping_coeffs, damp_colinear_len, Fdamp_norms, Frep_norms, Frep_all
+
+    double spring_constant = max_EE_repulsion_force/(max_dist-min_dist);
+    double damping_coeff = 4. * std::sqrt(spring_constant);
+    Eigen::Array<double, 6, 1> Frep = Eigen::ArrayXXd::Zero(6, 1);
     double nonlin_stiffness = 4.;
 
     int dim = 20;
-    Eigen::Array<double, 6, 49> distances;
-    Eigen::Array<double, 1, 49> Fpot_norms;
-    Eigen::Array<double, 6, 49> Frep_all;
-    Eigen::Array<double, 1, 49> damping_coeffs;
-    Eigen::Array<double, 1, 49> damp_colinear_len;
-    Eigen::Array<double, 1, 49> Fdamp_norms;
-    Eigen::Array<double, 1, 49> Frep_norms;
+    Eigen::ArrayXXd distances = Eigen::ArrayXXd::Zero(6, 49);
+    Eigen::ArrayXXd Fpot_norms = Eigen::ArrayXXd::Zero(1, 49);
+    Eigen::ArrayXXd Frep_all = Eigen::ArrayXXd::Zero(6, 49);
+    Eigen::ArrayXXd damping_coeffs = Eigen::ArrayXXd::Zero(1, 49);
+    Eigen::ArrayXXd damp_colinear_len = Eigen::ArrayXXd::Zero(1, 49);
+    Eigen::ArrayXXd Fdamp_norms = Eigen::ArrayXXd::Zero(1, 49);
+    Eigen::ArrayXXd Frep_norms = Eigen::ArrayXXd::Zero(1, 49);
 
-    Eigen::Array<double, 3, 49> repulsion_translation;
-    Eigen::Array<double, 1, 49> repulsion_translation_norms;
-    Eigen::Array<double, 3, 49> repulsion_directions;
+    Eigen::ArrayXXd repulsion_translation = Eigen::ArrayXXd::Zero(3, 49);
+    Eigen::ArrayXXd repulsion_translation_norms = Eigen::ArrayXXd::Zero(1, 49);
+    Eigen::ArrayXXd repulsion_directions = Eigen::ArrayXXd::Zero(3, 49);
+
+    Eigen::ArrayXXd norm_mask = Eigen::ArrayXXd::Zero(1, 49);
+
+    Eigen::ArrayXXd Fpot_rot_norms = Eigen::ArrayXXd::Zero(1, 49);
+    Eigen::ArrayXXd rot_damping_coeffs = Eigen::ArrayXXd::Zero(1, 49);
+    Eigen::ArrayXXd rot_damp_colinear_len = Eigen::ArrayXXd::Zero(1, 49);
+    Eigen::ArrayXXd Fdamp_rot_norms = Eigen::ArrayXXd::Zero(1, 49);
+    Eigen::ArrayXXd Frep_rot_norms = Eigen::ArrayXXd::Zero(1, 49);
+
+    Eigen::ArrayXXd repulsion_rotation = Eigen::ArrayXXd::Zero(3, 49);
+    Eigen::ArrayXXd repulsion_rotation_norms = Eigen::ArrayXXd::Zero(1, 49);
+    Eigen::ArrayXXd repulsion_rot_directions = Eigen::ArrayXXd::Zero(3, 49);
+
 
     
 
@@ -288,9 +310,9 @@ public:
     // Error logging
     int csv_counter = 0;
     
-    const char* path1 = "/home/tom/Documents/Presentation/cart_damping_forces.csv";
-    const char* path2 = "/home/tom/Documents/Presentation/cart_spring_forces.csv";
-    const char* path3 = "/home/tom/Documents/Presentation/cart_ee_pos.csv";
+    const char* path1 = "/home/tom/Documents/Presentation/Frep_EE.csv";
+    const char* path2 = "/home/tom/Documents/Presentation/tau_rep.csv";
+    const char* path3 = "/home/tom/Documents/Presentation/Fdamp_norms.csv";
 
     std::ofstream outFile1;
     std::ofstream outFile2;
