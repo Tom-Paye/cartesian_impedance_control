@@ -300,8 +300,19 @@ void CartesianImpedanceController::calcRepulsiveTorque(Eigen::Matrix<double, 6, 
   // std::cout << time_now - repulsion_date << std::endl;
   double d_00_t = (time_now - repulsion_date) *0.000000001;
 
-  if (repulsive_forces.isZero(0) || d_00_t > 0.01) {
-    tau_repulsion = tau_repulsion * 0.9994;
+  if (repulsive_forces.isZero(0) || d_00_t > 0.05) {
+    tau_repulsion_part = tau_repulsion_part * 0.9994;
+    tau_damping = tau_damping * 0;
+    for (int i=0; i<num_joints; ++i) {
+      std::array<double, 42> jacobian_array_i =  franka_robot_model_->getZeroJacobian(franka::Frame(i));
+      Eigen::Map<Eigen::Matrix<double, 6, 7>> jacobian_i(jacobian_array_i.data());
+
+      Eigen::Array<double, 6, 1> mask_col = mask.col(i);
+      Eigen::Array<double, 6, 1> unit_cart_spd = jacobian_i * dq_;  //unit_jt_spd
+      tau_damping_i = jacobian_i.transpose() * Sm * (mask_col * unit_cart_spd.array()).matrix();
+      tau_damping += tau_damping_i;
+    }
+    tau_repulsion = tau_repulsion_part + tau_damping;
     return;
   }
 
@@ -310,7 +321,7 @@ void CartesianImpedanceController::calcRepulsiveTorque(Eigen::Matrix<double, 6, 
 // F_impedance = -1 * (D * (jacobian * dq_) + K * error /*+ I_error*/);
   if (d_00_t > 0.01) {
     // std::cout << "d_00_t > 0.01" << std::endl;
-    tau_repulsion = (tau_repulsion_part.array() * spring_constants).matrix();
+    // tau_repulsion = (tau_repulsion_part.array() * spring_constants).matrix();
     // tau_repulsion_part = tau_repulsion_part * 0.099999;
     tau_damping = tau_damping * 0;
     for (int i=0; i<num_joints; ++i) {
@@ -340,7 +351,7 @@ void CartesianImpedanceController::calcRepulsiveTorque(Eigen::Matrix<double, 6, 
       tau_damping_i = jacobian_i.transpose() * Sm * (mask_col * unit_cart_spd.array()).matrix();
       tau_damping += tau_damping_i;
     }
-    tau_repulsion = (tau_repulsion_part.array() * spring_constants).matrix();
+    tau_repulsion_part = (tau_repulsion_part.array() * spring_constants).matrix();
   }
 
   tau_damping = (tau_damping.array() * damping_constants).matrix();
@@ -350,7 +361,7 @@ void CartesianImpedanceController::calcRepulsiveTorque(Eigen::Matrix<double, 6, 
   // std::cout << tau_damping << std::endl;
   // std::cout << "tau_repulsion raw [Nm]" << std::endl;
   // std::cout << tau_repulsion << std::endl;
-  tau_repulsion = tau_repulsion + tau_damping;
+  tau_repulsion = tau_repulsion_part + tau_damping;
   // repulsive_forces = repulsive_forces * 0.99;
 
 
@@ -419,7 +430,7 @@ controller_interface::return_type CartesianImpedanceController::update(const rcl
     Eigen::Array<double, 6, 1> pos_mask = error.head(3).array().min(impedance_limit_dist);
     Eigen::Array<double, 6, 1> neg_mask = error.head(3).array().max(-impedance_limit_dist);
     error.head(3) << (p_sign_mask * pos_mask + n_sign_mask * neg_mask);
-    F_impedance = -0.8 * (D * (jacobian * dq_) + K * error);
+    F_impedance = -1 * (D*std::sqrt(0.8) * (jacobian * dq_) + K*0.8 * error);
   }
   
   default:
