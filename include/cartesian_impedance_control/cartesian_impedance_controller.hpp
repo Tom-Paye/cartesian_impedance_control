@@ -123,7 +123,7 @@ public:
     Eigen::Matrix<double, 7, 1> tau_J_d_M = Eigen::MatrixXd::Zero(7, 1);
     Eigen::Matrix<double, 6, 1> O_F_ext_hat_K_M = Eigen::MatrixXd::Zero(6,1);
     Eigen::Matrix<double, 7, 1> q_;
-    Eigen::Matrix<double, 7, 1> dq_;
+    Eigen::Matrix<double, 7, 1> dq_ = Eigen::MatrixXd::Zero(7,1);
     Eigen::MatrixXd jacobian_transpose_pinv;  
 
     //Robot parameters
@@ -257,7 +257,7 @@ public:
     
     // Eigen::Array<double, 7, 1> damping_constants = -6 * sqrt(spring_constants);                // N 
     
-    double obj_rescale = 0.8;
+    double obj_rescale = 1.;
     double timeout_scaling = 1.;
 
 
@@ -308,27 +308,30 @@ public:
 
     //////////////////// Variables for offloaded spring force and damping calculation
 
-    Eigen::Array<double, 6, 7> repulsion_Ipot;
-    Eigen::Array<double, 6, 7> repulsion_Damper;
+    Eigen::Array<double, 6, 7> repulsion_Ipot = Eigen::ArrayXXd::Zero(6, 7);
+    Eigen::Array<double, 6, 7> repulsion_Damper = Eigen::ArrayXXd::Zero(6, 7);
 
-    Eigen::Array<double, 3, 7> damping_trans;
-    Eigen::Array<double, 3, 7> damping_rot;
+    Eigen::Array<double, 3, 7> damping_trans = Eigen::ArrayXXd::Zero(3, 7);
+    Eigen::Array<double, 3, 7> damping_rot = Eigen::ArrayXXd::Zero(3, 7);
 
-    Eigen::Array<double, 3, 7> damping_directions_trans;
-    Eigen::Array<double, 3, 7> damping_directions_rot;
+    Eigen::Array<double, 3, 7> damping_directions_trans = Eigen::ArrayXXd::Zero(3, 7);
+    Eigen::Array<double, 3, 7> damping_directions_rot = Eigen::ArrayXXd::Zero(3, 7);
 
-    Eigen::Array<double, 3, 1> cart_spd_trans;
-    Eigen::Array<double, 3, 1> cart_spd_rot;
+    Eigen::Array<double, 6, 1> cart_spd = Eigen::ArrayXXd::Zero(6, 1);
+    Eigen::Array<double, 3, 1> cart_spd_trans = Eigen::ArrayXXd::Zero(3, 1);
+    Eigen::Array<double, 3, 1> cart_spd_rot = Eigen::ArrayXXd::Zero(3, 1);
 
-    Eigen::Array<double, 3, 1> cart_damping_direction_trans;
-    Eigen::Array<double, 3, 1> cart_damping_force;
-    double cart_damping_force_scalar;
+    Eigen::Array<double, 3, 1> cart_damping_direction_trans = Eigen::ArrayXXd::Zero(3, 1);
+    Eigen::Array<double, 3, 1> cart_damping_force = Eigen::ArrayXXd::Zero(3, 1);
+    double cart_damping_force_scalar = 0;
 
-    Eigen::Array<double, 3, 1> cart_damping_direction_rot;
-    Eigen::Array<double, 3, 1> cart_damping_moment;
-    double cart_damping_moment_scalar;
+    Eigen::Array<double, 3, 1> cart_damping_direction_rot = Eigen::ArrayXXd::Zero(3, 1);
+    Eigen::Array<double, 3, 1> cart_damping_moment = Eigen::ArrayXXd::Zero(3, 1);
+    double cart_damping_moment_scalar = 0;
 
-    Eigen::Array<double, 6, 1> repulsion_Idamp;
+    Eigen::Array<double, 6, 1> repulsion_Idamp = Eigen::ArrayXXd::Zero(6, 1);
+
+    int decrement = 1;
     
 
 
@@ -336,13 +339,19 @@ public:
     // Error logging
     int csv_counter = 0;
     
-    const char* path1 = "/home/tom/Documents/Presentation/Frep_EE.csv";
+    const char* path1 = "/home/tom/Documents/Presentation/cart_spd_EE.csv";
     const char* path2 = "/home/tom/Documents/Presentation/tau_rep.csv";
-    const char* path3 = "/home/tom/Documents/Presentation/Fdamp_norms.csv";
+    const char* path3 = "/home/tom/Documents/Presentation/repulsion_Ipot_EE.csv";
+    const char* path4 = "/home/tom/Documents/Presentation/tau_spring.csv";
+    const char* path5 = "/home/tom/Documents/Presentation/tau_damping.csv";
+    const char* path6 = "/home/tom/Documents/Presentation/repulsion_Damper.csv";
 
     std::ofstream outFile1;
     std::ofstream outFile2;
     std::ofstream outFile3;   
+    std::ofstream outFile4; 
+    std::ofstream outFile5; 
+    std::ofstream outFile6; 
 
     //Logging
     int outcounter = 0;
@@ -369,6 +378,6 @@ public:
     int mode_ = 3;
 
     // Timer Flags
-    double repulsion_date;
+    double repulsion_date = 0;
 };
 }  // namespace cartesian_impedance_control

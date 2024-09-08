@@ -292,6 +292,7 @@ void CartesianImpedanceController::repulsion_topic_Damper_callback(const std::sh
   Eigen::Map<Eigen::Array<double, 6, 7>> dampers(array.data(), height, width);  
   repulsion_Damper = dampers;
   repulsion_date = get_node()->get_clock()->now().nanoseconds();
+
 }
 
     
@@ -872,51 +873,35 @@ void CartesianImpedanceController::updateJointStates() {
     double time_now = get_node()->get_clock()->now().nanoseconds();
     double d_00_t = (time_now - repulsion_date) *0.000000001;
 
+    if(repulsion_Ipot.isZero(0)){
+      tau_spring = tau_spring*0;
+      tau_damping = tau_damping*0;
+      tau_repulsion = tau_repulsion*0;
+      // std::cout << "repulsive_dists.isZero(0)" << std::endl;
+      return;
+    }
+
+    
     // typical cam frequency is 22 hz ==> delay is 1/20 = 0.05s
-    if (repulsive_dists.isZero(0) || d_00_t > 0.05) {
-      tau_spring = tau_spring * 0.9994;
-    }
+    if (d_00_t > 0.01) {
+      decrement *= 0.9994;
+      // std::cout << "d_00_t > 0.5" << std::endl;
+      // tau_spring = tau_spring * 0.9994;
+    } else{
 
-    if (repulsive_dists.isZero(0) || d_00_t > 0.005) {
-        
-      tau_damping = tau_damping * 0;
+      // std::cout << "d_00_t <= 0.5" << std::endl;
 
-      for (int i=0; i<num_joints; ++i) {
-        // Get robot data
-        std::array<double, 42> jacobian_array_i =  franka_robot_model_->getZeroJacobian(franka::Frame(i));
-        Eigen::Map<Eigen::Matrix<double, 6, 7>> jacobian_i(jacobian_array_i.data());
-
-        Eigen::Array<double, 6, 1> cart_spd = jacobian_i * dq_;
-        cart_spd_trans = cart_spd(Eigen::seq(0,2), Eigen::all);
-        cart_spd_rot = cart_spd(Eigen::seq(3,5), Eigen::all);
-        // Calculate cartesian damping forces
-
-        cart_damping_force_scalar = (damping_trans.col(i) * cart_spd_trans.array()).sum();
-        cart_damping_direction_trans = damping_directions_trans.col(i) * -1 * std::signbit(cart_damping_force_scalar);
-        cart_damping_force = cart_damping_force_scalar * cart_damping_direction_trans;
-
-        cart_damping_moment_scalar = (damping_rot.col(i) * cart_spd_rot.array()).sum();
-        cart_damping_direction_rot = damping_directions_rot.col(i) * -1 * std::signbit(cart_damping_moment_scalar);
-        cart_damping_moment = cart_damping_moment_scalar * cart_damping_direction_rot;
-
-        repulsion_Idamp << cart_damping_force, cart_damping_moment;
-
-        // Convert forces to joint_space
-        tau_damping_i = jacobian_i.transpose().matrix() * repulsion_Idamp.matrix();
-        tau_damping += tau_damping_i;
-      }
-    }
-
-    if (repulsive_dists.isZero(0) || d_00_t < 0.005) {
+      decrement = 1;
 
       damping_trans = repulsion_Damper(Eigen::seq(0,2), Eigen::all);
       damping_rot = repulsion_Damper(Eigen::seq(3, 5), Eigen::all);
 
       damping_directions_trans = damping_trans.colwise().normalized();
+      damping_directions_trans = damping_directions_trans.unaryExpr([](double v) { return std::isnan(v) ? 0.0 : v; });
       damping_directions_rot = damping_rot.colwise().normalized();
+      damping_directions_rot = damping_directions_rot.unaryExpr([](double v) { return std::isnan(v) ? 0.0 : v; });
       
       tau_spring = tau_spring * 0;
-      tau_damping = tau_damping * 0;
 
       for (int i=0; i<num_joints; ++i) {
 
@@ -924,35 +909,41 @@ void CartesianImpedanceController::updateJointStates() {
         std::array<double, 42> jacobian_array_i =  franka_robot_model_->getZeroJacobian(franka::Frame(i));
         Eigen::Map<Eigen::Matrix<double, 6, 7>> jacobian_i(jacobian_array_i.data());
 
-        Eigen::Array<double, 6, 1> cart_spd = jacobian_i * dq_;
-        cart_spd_trans = cart_spd(Eigen::seq(0,2), Eigen::all);
-        cart_spd_rot = cart_spd(Eigen::seq(3,5), Eigen::all);
-
-
-        // Calculate cartesian damping forces
-
-        cart_damping_force_scalar = (damping_trans.col(i) * cart_spd_trans.array()).sum();
-        cart_damping_direction_trans = damping_directions_trans.col(i) * -1 * std::signbit(cart_damping_force_scalar);
-        cart_damping_force = cart_damping_force_scalar * cart_damping_direction_trans;
-
-        cart_damping_moment_scalar = (damping_rot.col(i) * cart_spd_rot.array()).sum();
-        cart_damping_direction_rot = damping_directions_rot.col(i) * -1 * std::signbit(cart_damping_moment_scalar);
-        cart_damping_moment = cart_damping_moment_scalar * cart_damping_direction_rot;
-
-        repulsion_Idamp << cart_damping_force, cart_damping_moment;
-
         // Convert forces to joint_space
         tau_spring_i = jacobian_i.transpose().matrix() * repulsion_Ipot.col(i).matrix();
         tau_spring += tau_spring_i;
-
-        tau_damping_i = jacobian_i.transpose() * repulsion_Idamp.matrix();
-        tau_damping += tau_damping_i;
 
       }
 
     }
 
-    tau_repulsion = tau_spring + tau_damping;
+    tau_damping = tau_damping * 0;
+    for (int i=0; i<num_joints; ++i) {
+      // Get robot data
+      std::array<double, 42> jacobian_array_i =  franka_robot_model_->getZeroJacobian(franka::Frame(i));
+      Eigen::Map<Eigen::Matrix<double, 6, 7>> jacobian_i(jacobian_array_i.data());
+
+      cart_spd = jacobian_i * dq_;
+      cart_spd_trans = cart_spd(Eigen::seq(0,2), Eigen::all);
+      cart_spd_rot = cart_spd(Eigen::seq(3,5), Eigen::all);
+      // Calculate cartesian damping forces
+
+      cart_damping_force_scalar = (damping_trans.col(i) * cart_spd_trans.array()).sum();
+      cart_damping_direction_trans = damping_directions_trans.col(i) * -1 * std::signbit(cart_damping_force_scalar);
+      cart_damping_force = cart_damping_force_scalar * cart_damping_direction_trans;
+
+      cart_damping_moment_scalar = (damping_rot.col(i) * cart_spd_rot.array()).sum();
+      cart_damping_direction_rot = damping_directions_rot.col(i) * -1 * std::signbit(cart_damping_moment_scalar);
+      cart_damping_moment = cart_damping_moment_scalar * cart_damping_direction_rot;
+
+      repulsion_Idamp << cart_damping_force, cart_damping_moment;
+
+      // Convert forces to joint_space
+      tau_damping_i = jacobian_i.transpose().matrix() * repulsion_Idamp.matrix();
+      tau_damping += tau_damping_i;
+    }
+
+    tau_repulsion = (tau_spring + tau_damping) * decrement;
 
   }  
 
@@ -1114,14 +1105,35 @@ controller_interface::return_type CartesianImpedanceController::update(const rcl
 
 
 
-    // std::cout << "Frep" << std::endl;
-    // std::cout << Frep << std::endl;
-    // std::cout << "Fpot_norms" << std::endl;
-    // std::cout << Fpot_norms << std::endl;
-    // std::cout << "Fpot_rot_norms" << std::endl;
-    // std::cout << Fpot_rot_norms << std::endl;
-    // std::cout << "norm_mask" << std::endl;
-    // std::cout << norm_mask << std::endl;
+    
+    // std::cout << "repulsion_Idamp" << std::endl;
+    // std::cout << repulsion_Idamp << std::endl;
+    // std::cout << "cart_damping_force" << std::endl;
+    // std::cout << cart_damping_force << std::endl;
+    // std::cout << "cart_damping_moment" << std::endl;
+    // std::cout << cart_damping_moment << std::endl; 
+    // std::cout << "cart_damping_force_scalar" << std::endl;
+    // std::cout << cart_damping_force_scalar << std::endl;
+    // std::cout << "cart_damping_direction_trans" << std::endl;
+    // std::cout << cart_damping_direction_trans << std::endl;   
+    // std::cout << "cart_spd" << std::endl;
+    // std::cout << cart_spd << std::endl;  
+    // std::cout << "cart_spd_trans" << std::endl;
+    // std::cout << cart_spd_trans << std::endl; 
+    // std::cout << "damping_directions_trans" << std::endl;
+    // std::cout << damping_directions_trans << std::endl;  
+    // std::cout << "damping_trans" << std::endl;
+    // std::cout << damping_trans << std::endl;  
+    // std::cout << "std::signbit(cart_damping_force_scalar)" << std::endl;
+    // std::cout << std::signbit(cart_damping_force_scalar) << std::endl; 
+
+    
+
+
+    
+    
+
+    
     
     
 
@@ -1134,58 +1146,103 @@ controller_interface::return_type CartesianImpedanceController::update(const rcl
     // std::cout << "--------" << std::endl;
   }
 
-  // if (outcounter % 2/update_frequency == 0){
-  //   if (csv_counter == 50*5){
-  //     outFile1.open(path1);
-  //     outFile2.open(path2);
-  //     outFile3.open(path3);
-  //   }
+  if (outcounter % 1/update_frequency == 0){
+    if (csv_counter == 100*5){
+      outFile1.open(path1);
+      outFile2.open(path2);
+      outFile3.open(path3);
+      outFile4.open(path4);
+      outFile5.open(path5);
+      outFile6.open(path6);
+    }
 
-  //   if (outFile1.is_open()) {
-  //       for (int i = 0; i < Frep.rows(); ++i) {
-  //           for (int j = 0; j < Frep.cols(); ++j) {
-  //               outFile1 << Frep(i, j);
-  //               if (j < Frep.cols() - 1) {
-  //                   outFile1 << ",";  // Add comma between values
-  //               }
-  //           }
-  //           outFile1 << "\n";  // Newline at the end of each row
-  //       }
-  //   }
-  //   if (outFile2.is_open()) {
-  //       // outFile2 << Frep_norms.sum();
-  //       // outFile2 << ",";
-  //       for (int i = 0; i < tau_repulsion.rows(); ++i) {
-  //           for (int j = 0; j < tau_repulsion.cols(); ++j) {
-  //               outFile2 << tau_repulsion(i, j);
-  //               if (j < tau_repulsion.cols() - 1) {
-  //                   outFile2 << ",";  // Add comma between values
-  //               }
-  //           }
-  //           outFile2 << "\n";  // Newline at the end of each row
-  //       }
-  //   }
-  //   if (outFile3.is_open()) {
-  //       // outFile3 << Fdamp_norms.sum();
-  //       // outFile3 << ",";
-  //       for (int i = 0; i < Fdamp_norms.rows(); ++i) {
-  //           for (int j = 0; j < Fdamp_norms.cols(); ++j) {
-  //               outFile3 << Fdamp_norms(i, j);
-  //               if (j < Fdamp_norms.cols() - 1) {
-  //                   outFile3 << ",";  // Add comma between values
-  //               }
-  //           }
-  //           outFile3 << "\n";  // Newline at the end of each row
-  //       }
-  //   }
+    if (outFile1.is_open()) {
+        for (int i = 0; i < cart_spd.rows(); ++i) {
+            for (int j = 0; j < cart_spd.cols(); ++j) {
+                outFile1 << cart_spd(i, j);
+                if (j < cart_spd.cols() - 1) {
+                    outFile1 << ",";  // Add comma between values
+                }
+            }
+            outFile1 << "\n";  // Newline at the end of each row
+        }
+    }
+    if (outFile2.is_open()) {
+        // outFile2 << Frep_norms.sum();
+        // outFile2 << ",";
+        for (int i = 0; i < tau_repulsion.rows(); ++i) {
+            for (int j = 0; j < tau_repulsion.cols(); ++j) {
+                outFile2 << tau_repulsion(i, j);
+                if (j < tau_repulsion.cols() - 1) {
+                    outFile2 << ",";  // Add comma between values
+                }
+            }
+            outFile2 << "\n";  // Newline at the end of each row
+        }
+    }
+    if (outFile3.is_open()) {
+        // outFile3 << Fdamp_norms.sum();
+        // outFile3 << ",";
+        for (int i = 0; i < repulsion_Ipot.rows(); ++i) {
+            for (int j = 0; j < repulsion_Ipot.cols(); ++j) {
+                outFile3 << repulsion_Ipot(i, j);
+                if (j < repulsion_Ipot.cols() - 1) {
+                    outFile3 << ",";  // Add comma between values
+                }
+            }
+            outFile3 << "\n";  // Newline at the end of each row
+        }
+    }
+    if (outFile4.is_open()) {
+        // outFile3 << Fdamp_norms.sum();
+        // outFile3 << ",";
+        for (int i = 0; i < tau_spring.rows(); ++i) {
+            for (int j = 0; j < tau_spring.cols(); ++j) {
+                outFile4 << tau_spring(i, j);
+                if (j < tau_spring.cols() - 1) {
+                    outFile4 << ",";  // Add comma between values
+                }
+            }
+            outFile4 << "\n";  // Newline at the end of each row
+        }
+    }
+    if (outFile5.is_open()) {
+        // outFile3 << Fdamp_norms.sum();
+        // outFile3 << ",";
+        for (int i = 0; i < tau_damping.rows(); ++i) {
+            for (int j = 0; j < tau_damping.cols(); ++j) {
+                outFile5 << tau_damping(i, j);
+                if (j < tau_damping.cols() - 1) {
+                    outFile5 << ",";  // Add comma between values
+                }
+            }
+            outFile5 << "\n";  // Newline at the end of each row
+        }
+    }
+    if (outFile6.is_open()) {
+        // outFile3 << Fdamp_norms.sum();
+        // outFile3 << ",";
+        for (int i = 0; i < repulsion_Damper.rows(); ++i) {
+            for (int j = 0; j < repulsion_Damper.cols(); ++j) {
+                outFile6 << repulsion_Damper(i, j);
+                if (j < repulsion_Damper.cols() - 1) {
+                    outFile6 << ",";  // Add comma between values
+                }
+            }
+            outFile6 << "\n";  // Newline at the end of each row
+        }
+    }
 
-  //   csv_counter++;
-  //   if (csv_counter == 500 * 40){
-  //     outFile1.close();
-  //     outFile2.close();
-  //     outFile3.close();
-  //   }
-  // }
+    csv_counter++;
+    if (csv_counter == 1000 * 180){
+      outFile1.close();
+      outFile2.close();
+      outFile3.close();
+      outFile4.close();
+      outFile5.close();
+      outFile6.close();
+    }
+  }
 
 
   outcounter++;
