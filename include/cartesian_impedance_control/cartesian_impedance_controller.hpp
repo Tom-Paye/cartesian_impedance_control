@@ -93,16 +93,12 @@ public:
     //Nodes
     rclcpp::Subscription<franka_msgs::msg::FrankaRobotState>::SharedPtr franka_state_subscriber = nullptr;
     rclcpp::Service<messages_fr3::srv::SetPose>::SharedPtr pose_srv_;
-    // rclcpp::Subscription<messages_fr3::msg::Array2d>::SharedPtr repulsion_subscriber = nullptr;
-    // rclcpp::Subscription<messages_fr3::msg::IrregularDistArray>::SharedPtr repulsion_subscriber = nullptr;
     rclcpp::Subscription<messages_fr3::msg::Array2d>::SharedPtr repulsion_Ipot_subscriber = nullptr;
     rclcpp::Subscription<messages_fr3::msg::Array2d>::SharedPtr repulsion_Damper_subscriber = nullptr;
 
 
     //Functions
     void topic_callback(const std::shared_ptr<franka_msgs::msg::FrankaRobotState> msg);
-    // void repulsion_topic_callback(const std::shared_ptr<messages_fr3::msg::Array2d> msg);
-    // void repulsion_topic_callback(const std::shared_ptr<messages_fr3::msg::IrregularDistArray> msg);
     void repulsion_topic_Ipot_callback(const std::shared_ptr<messages_fr3::msg::Array2d> msg);
     void repulsion_topic_Damper_callback(const std::shared_ptr<messages_fr3::msg::Array2d> msg);
     void updateJointStates();
@@ -110,11 +106,8 @@ public:
     void arrayToMatrix(const std::array<double, 6>& inputArray, Eigen::Matrix<double, 6, 1>& resultMatrix);
     void arrayToMatrix(const std::array<double, 7>& inputArray, Eigen::Matrix<double, 7, 1>& resultMatrix);
     Eigen::Matrix<double, 7, 1> saturateTorqueRate(const Eigen::Matrix<double, 7, 1>& tau_d_calculated, const Eigen::Matrix<double, 7, 1>& tau_J_d);
-    // void calcRepulsiveTorque(Eigen::Matrix<double, 6, 7> repulsive_dists);   
-    // void calcRepulsiveTorque(std::vector<double> irregular_vector);
-    void calcRepulsiveTorque();    
-    // std::array<double, 6> convertToStdArray(geometry_msgs::msg::WrenchStamped& wrench);
-    // void normalized_rep_to_rep_forces(Eigen::Array<double, 6, 7> relative_forces);
+    void calcRepulsiveTorque();
+
     //State vectors and matrices
     std::array<double, 7> q_subscribed;
     std::array<double, 7> tau_J_d = {0,0,0,0,0,0,0};
@@ -200,36 +193,11 @@ public:
     
     //Repulsion control variables
 
-    double max_dist = 0.25;  // meters
+    double max_dist = 0.4;  // meters
     double min_dist = 0.; // meters
-
-    // // Eigen::Array<double, 7, 1> max_admissible_moments = {87., 87., 87., 87., 12., 12., 12.};             // Nm
-    // Eigen::Array<double, 7, 1> max_admissible_moments = {100., 90., 90., 90., 12., 12., 12.};  // alternative form to motivate 2ndary rotation
-    // Eigen::Array<double, 7, 1> max_moments = max_admissible_moments / 3.;  // Rescale to not use max forces
-    // Eigen::Array<double, 7, 1> rep_force_scaling_fraction = max_admissible_moments / max_admissible_moments.maxCoeff();  // between 0 and 1, dimensionless
-    // Eigen::Array<double, 7, 1> rep_force_scaling = rep_force_scaling_fraction * 18;  // the last number is the max force in [N] that we want to apply
-
-
-    ////////////////////////////////// For testing with sprig damper in cartesian space
     
     // Max moment on each joint is (87., 87., 87., 87., 12., 12., 12.) Nm
-    Eigen::Array<double, 7, 1> force_allocation = {3., 3., 1.5, 1., 1., 1., 1.};                          // how to scale forces based on EE force
     double max_EE_repulsion_force = 8.;                                                         // [N]
-    Eigen::Array<double, 7, 1> max_spring = (force_allocation * max_EE_repulsion_force);           // Max spring rep forces in N
-
-    Eigen::Matrix<double, 7, 7> spring_constants = (max_spring/(max_dist-min_dist)).matrix().asDiagonal(); // [N/m]
-
-    Eigen::Matrix<double, 7, 7> damping_constants = (12 * spring_constants.array().sqrt()).matrix(); // [N/(m/s)]
-
-    //////////////////////////////////
-
-
-    
-    // // Eigen::Array<double, 7, 1> spring_constants = max_moments / (max_dist - min_dist) * 0.2;        // N, but spring constant!
-
-    // Eigen::Array<double, 7, 1> spring_constants = rep_force_scaling / (max_dist - min_dist);        // [N/m], ensures the max force is reached at max_dist - min_dist
-    // double prev_big_T = 0.;
-    // //scaling factor of 1/0.5m to get a spring constant in N/m 
 
       Eigen::Matrix<double, 7, 1> tau_repulsion = Eigen::MatrixXd::Zero(7, 1);
       Eigen::Matrix<double, 7, 1> tau_spring_i = Eigen::MatrixXd::Zero(7, 1);
@@ -241,22 +209,9 @@ public:
       Eigen::Array<double, 6, 7> repulsion_damping_mask = Eigen::MatrixXd::Zero(6, 7);
       
       Eigen::Array<double, 6, 7> repulsion_damping_multipliers;
-      // Eigen::Matrix<double, 3, 7> repulsion_translation;
-      // Eigen::Array<double, 1, 7> repulsion_translation_norms;
-      // Eigen::Array<double, 3, 7> repulsion_directions;
 
       Eigen::Array<double, 6, 1> cart_damping_redirection;
-      // double cart_damping_force_scalar;
-
-      // Eigen::Matrix<double,6,7> cart_spring_forces;
-      // Eigen::Array<double,6,7> cart_damping_forces;
-      // Eigen::Matrix<double,6,1> cart_damping_force;
-
-      
-
-    
-    // Eigen::Array<double, 7, 1> damping_constants = -6 * sqrt(spring_constants);                // N 
-    
+       
     double obj_rescale = 1.;
     double timeout_scaling = 1.;
 

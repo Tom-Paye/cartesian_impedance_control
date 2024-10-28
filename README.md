@@ -78,3 +78,8 @@ required new messages have to be defined.
 
 ### Custom messages
 In the messages_fr3 package, some messages are already defined. The message definition for the service can be found in meessages_fr3/srv. When creating a new message, first, the definition has to be created in .srv file in CamelCase. Then, type the request, together with the type of the variable, followed by three hyphens and the desired response. The last step, before the message can be included as a lowercase_lowerscase.hpp file is to add it to the CMakeLists.txt file below the already existing messages in the rosidl_generate_interface block.
+
+
+### Known errors
+According to various scope and definition differences between PCs, the topic_callback may encounter errors. Two versions are therefore available and can be switched between to allow compiling.
+To change implementations, switch the commented line of topic_callback in the cpp file. Using the convertToStdArray function also requires uncommenting it from both cpp and header files.
